@@ -26,19 +26,21 @@ class PacketProcessor:
         src_port = None
         dst_port = None
         tcp_flags = None
+        payload_size = len(bytes(packet.payload))
 
         if packet.haslayer(TCP):
             protocol = "TCP"
             src_port = packet[TCP].sport
             dst_port = packet[TCP].dport
             tcp_flags = str(packet[TCP].flags)
+            payload_size = len(bytes(packet[TCP].payload))
 
         elif packet.haslayer(UDP):
             protocol = "UDP"
             src_port = packet[UDP].sport
             dst_port = packet[UDP].dport
+            payload_size = len(bytes(packet[UDP].payload))
 
-        payload_size = len(bytes(packet.payload))
 
         return PacketData(
             timestamp=packet.time,
