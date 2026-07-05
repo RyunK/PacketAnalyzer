@@ -2,11 +2,14 @@ from queue import Queue
 from scapy.layers.inet import IP, TCP, UDP
 from packet_data import PacketData
 
+from flow_manager import FlowManager
+
 
 class PacketProcessor:
 
     def __init__(self, packet_queue: Queue):
         self.packet_queue = packet_queue
+        self.flow_manager = FlowManager()
 
     def process_packet(self, packet):
 
