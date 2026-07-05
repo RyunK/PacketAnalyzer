@@ -24,10 +24,8 @@ processor_thread = Thread(
 
 
 capture_thread.start()
-
 processor_thread.start()
 
 
 capture_thread.join()
-
 processor_thread.join()
