@@ -17,7 +17,7 @@ scan_state = defaultdict(
 def detect(packet: PacketData, flow: Flow):
 
     # NULL Scan 패킷만 검사
-    if packet.tcp_flags != 0:
+    if packet.tcp_flags != "":
         return
 
     src_ip = packet.src_ip
