@@ -11,6 +11,21 @@
 git clone https://github.com/RyunK/PacketAnalyzer.git
 ```
 
+### fork
+이거 하면 편하게 여러분의 github상에 코드를 저장하면서도 제 저장소에도 추가할 수 있다고 합니다.
+
+이 github 페이지에서 버튼을 눌러 Fork 합니다.
+
+위에서 코드를 다운로드 받았다면, 아래 명령어를 입력하여 원본 저장소와 연결합니다.
+
+```bash
+git remote add upstream https://github.com/RyunK/PacketAnalyzer.git
+```
+
+https://qkrrmsdud.tistory.com/43
+
+저도 Fork 직접 해본적은 없고 위 블로그를 참고했습니다… 이렇게 해서 그냥 원래 하듯 개발 하다가 Pull request 하면 통합할 수 있다고 하네요.
+
 ## 코드 추가 가이드
 
 ```markdown
