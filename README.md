@@ -125,7 +125,7 @@ vscode 우측 상단의 **Run Python File** 버튼을 눌러도 됩니다.
 | packet_size | int | 패킷의 전체 크기(Byte) | `packet.packet_size` |
 | payload_size | int | 패킷의 payload 크기 (Byte) | `packet.payload_size` |
 | ttl | int | ttl(time to live) 값, 라우터를 최대 몇 개 지날 수 있는지 | `packet.ttl` |
-| top_flags | str | S, A, F 등 TCP Flags 정보 | `packet.tcp_flags` |
+| tcp_flags | str | S, A, F 등 TCP Flags 정보 | `packet.tcp_flags` |
 | raw_packet | object | Scapy로 읽은 원본 Packet 정보 
 **매우 제한적으로 사용을 권장** | `packet.raw_packet`  |
 
