@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from collections import deque
+from collections import Counter, deque
 
 
 @dataclass
@@ -8,10 +8,8 @@ class Flow:
 
     # 양방향 Endpoint
     endpoint1_ip: str
-    endpoint1_port: int
 
     endpoint2_ip: str
-    endpoint2_port: int
 
     protocol: str
 
@@ -37,7 +35,16 @@ class Flow:
     rst_count: int = 0
 
     # 최근 패킷
-    recent_packets: deque = field(default_factory=lambda: deque(maxlen=30))
+    recent_packets: deque = field(default_factory=lambda: deque(maxlen=50))
+
+        # 최근 목적지 포트
+    recent_dst_ports: deque = field(default_factory=lambda: deque(maxlen=50))
+
+    # 목적지 포트별 접근 횟수
+    dst_port_counter: Counter = field(default_factory=Counter)
+
+    # 출발지 포트별 사용 횟수
+    src_port_counter: Counter = field(default_factory=Counter)
 
     # ---------- 계산 속성 ----------
 
@@ -92,4 +99,12 @@ class Flow:
         return (
             self.forward_packet_count == 0
             or self.backward_packet_count == 0
+        )
+    
+    @property
+    def get_dst_port_counter(self) -> Counter:
+
+        return Counter(
+            packet.dst_port
+            for packet in self.recent_packets
         )
