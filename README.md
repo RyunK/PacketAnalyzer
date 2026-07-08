@@ -1,8 +1,24 @@
-가이드 노션 링크 : https://www.notion.so/Scapy-393da9caea25804dad3bd0cfbacf1572?source=copy_link
+## 현재 버전 및 가이드 목록
+```plaintext
+최초 배포 : 엔진 토대 개발, Scapy 인터페이스
 
-# Scapy 데이터 사용법
+*recent* > db업데이트 : 패킷 데이터 및 경고 데이터 삽입하도록 업데이트함.
+```
 
-## 코드 다운로드
+Scapy 데이터 활용 가이드 링크 : https://www.notion.so/Scapy-393da9caea25804dad3bd0cfbacf1572?source=copy_link
+
+DB에 저장할 수 있도록 탐지기 개발하기 : https://app.notion.com/p/DB-397da9caea2580cab06deb46294f0598?source=copy_link
+
+### 목록
+---
+* [Scapy 데이터 사용법](#scapy-데이터-사용법)
+
+* [DB에 저장하기](#db에-저장하기-위한-코드-수정)
+
+
+## Scapy 데이터 사용법
+
+### 코드 다운로드
 이 코드를 작업 폴더에 다운로드 합니다.
 
 직접 다운로드 받아 zip을 풀어도 되고, vscode 터미널 상에서 아래 명령을 실행해도 됩니다.
@@ -26,7 +42,7 @@ https://qkrrmsdud.tistory.com/43
 
 저도 Fork 직접 해본적은 없고 위 블로그를 참고했습니다… 이렇게 해서 그냥 원래 하듯 개발 하다가 Pull request 하면 통합할 수 있다고 하네요.
 
-## 코드 추가 가이드
+### 코드 추가 가이드
 
 ```markdown
 PacketAnalyzer
@@ -86,13 +102,13 @@ def detect(packet: PacketData, flow: Flow):
 
 `scapy`가 패킷 하나를 읽을 때마다 `detectors` 폴더 내부의 각 파일에 `detect` 함수가 있다면 이들을 호출합니다. (`engine\processor.py` 내용)
 
-### 출력 가이드
+#### 출력 가이드
 
 우선 `print` 를 하면서 함수가 의도에 맞게 잘 작동하는지 테스트하세요.
 
 추후, `dict` 형식으로 `return`받아 DB에 저장할 예정입니다.
 
-## 코드 실행
+### 코드 실행
 
 `main.py` 파일을 실행하면 됩니다.
 
@@ -106,7 +122,7 @@ py main.py
 
 vscode 우측 상단의 **Run Python File** 버튼을 눌러도 됩니다.
 
-## 데이터 사용
+### 데이터 사용
 
 예시 코드에서처럼 `packet.(변수명)` 이나 `flow.(변수명)`  처럼 호출하여 사용합니다.
 
@@ -177,3 +193,51 @@ vscode 우측 상단의 **Run Python File** 버튼을 눌러도 됩니다.
 | is_one_way | bool | 한쪽 방향으로만 통신하고 있는지 | `flow.is_one_way` |
 | get_dst_port_counter | Counter | 특정 출발지 IP에 대한 도착지 포트들과 횟수. counter[80] 하면 출발지 ip가 도착지의 80번 포트에 접근한 횟수를 알 수 있음. (**최근 50개 패킷**에 대해서 계산) | `flow.get_dst_port_counter(src_ip)` |
 | get_dst_unique_ports | Set | 특정 출발지 IP에 대한 도착지 포트들의 종류.  (**최근 50개 패킷**에 대해서 계산) | `flow.get_dst_unique_ports(src_ip)` |
+
+---
+<br>
+
+## DB에 저장하기 위한 코드 수정
+
+main을 fetch 해서 확인해보면 `engine/db` 폴더가 생겼을 것입니다.
+
+```bash 
+# fetch하는 방법
+
+git fetch upstream
+git merge upstream/main
+```
+
+실행은 동일하게 `main.py` 에서 하면 되지만, 여러분이 작성하신 detect 코드를 조금 수정해야 합니다.
+
+detectors/syn_flood.py
+
+```python
+from engine import PacketData, Flow
+
+def detect(packet: PacketData, flow: Flow):
+
+    print('syn_flood 모듈 실행중')
+    print(packet.raw_packet)
+
+    if flow.protocol != "TCP":
+        return (False, "")
+
+    if flow.syn_count > 100 and flow.pps > 50:
+
+        print(
+            "[SYN Flood]",
+            packet.src_ip
+        )
+        return (True, "SYN Flood")
+    
+    return (False, "")
+
+```
+
+앞서 있던 예시 코드와 비교해보면 `return`이 생기거나 바뀌었습니다.
+
+1. 기존에 위험을 감지했을 때에 `print` 하던 것 대신 `return` 을 합니다.
+2. `return` 할 때의 형식은 `(False 혹은 True, “(탐지된 공격 유형)”)` 입니다.
+    1. 공격이 탐지되지 않은 채로 함수를 빠져나갈 때에는 `(False, "")`를 반환합니다.
+    2. 공격이 탐지되었다면 `(True, "공격 유형")` 을 반환합니다.
