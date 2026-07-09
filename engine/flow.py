@@ -58,8 +58,6 @@ class Flow:
     @property
     def bps(self) -> float:
         """Bytes Per Second"""
-        if self.duration == 0:
-            return float(self.byte_count)
 
         return self.static_bps
 
@@ -129,7 +127,7 @@ class Flow:
 
     def get_recent_flag_counter(self, seconds) -> Counter:
         """
-        최근 1초동안의 TCP 패킷들의 Flag별 접근 횟수를 반환.
+        최근 {seconds}초동안의 TCP 패킷들의 Flag별 접근 횟수를 반환.
         @param seconds: 최근 몇 초간의 패킷을 고려할지(최대 10초)
         @return: Counter 객체, 키: TCP Flag, 값: 접근 횟수 counter
         """
@@ -152,7 +150,7 @@ class Flow:
     
     def get_recent_packets_by_flag(self, seconds, flag: str):
         """
-        최근 1초동안의 TCP 패킷 중 특정 Flag를 가진 패킷들을 반환.
+        최근 {seconds}초동안의 TCP 패킷 중 특정 Flag를 가진 패킷들을 반환.
         @param seconds: 최근 몇 초간의 패킷을 고려할지(최대 10초)
         @param flag: TCP Flag (예: "S", "A", "F", "R")
         @return: 해당 Flag를 가진 PacketData 객체들의 리스트
@@ -165,6 +163,31 @@ class Flow:
             and packet.timestamp >= self.last_seen - seconds
         ]
     
+    def get_avg_packet_size(self, seconds: float):
+
+        packets = self.get_packets(seconds)
+
+        if not packets:
+            return 0
+
+        return (
+            sum(packet.packet_size for packet in packets)
+            / len(packets)
+        )
+
+    def get_packets(self, seconds: float | None = None):
+
+        if seconds is None:
+            return list(self.recent_packets)
+
+        cutoff = self.last_seen - seconds
+
+        return [
+            packet
+            for packet in self.recent_packets
+            if packet.timestamp >= cutoff
+        ]
+
     def update_statistics(self):
         self.static_pps = sum(
             1
