@@ -12,3 +12,6 @@ def detect(packet: PacketData, flow: Flow):
             "[UDP Flood]",
             packet.src_ip
         )
+        return (True, "UDP Flood")
+    
+    return (False, "")

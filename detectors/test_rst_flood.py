@@ -10,13 +10,16 @@ def detect(packet: PacketData, flow: Flow):
 
     flags = packet.tcp_flags or ""
     if "R" not in flags:
-        return False
+        return (False, "")
 
     if flow.rst_count >= RST_THRESHOLD:
         print(
-            "rst flooding",
-            packet.src_ip)
-
+            "[RST Flood]",
+            packet.src_ip
+        )
+        return (True, "RST Flood")
+    return (False, "")
+    
 
 # rst_flood_alert = flow.rst_count >= RST_THRESHOLD
 # #log_record = {
