@@ -21,7 +21,7 @@ httpx==0.28.1
 huggingface_hub==1.22.0
 idna==3.18
 ImageIO==2.37.3
-importlib==1.0.4
+
 Jinja2==3.1.6
 joblib==1.5.3
 kiwisolver==1.5.0
