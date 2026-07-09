@@ -4,8 +4,9 @@ def detect(packet: PacketData, flow: Flow):
 
     print('syn_flood 모듈 실행중')
     print(packet.raw_packet)
+
     if flow.protocol != "TCP":
-        return
+        return (False, "")
 
     if flow.syn_count > 100 and flow.pps > 50:
 
@@ -13,3 +14,6 @@ def detect(packet: PacketData, flow: Flow):
             "[SYN Flood]",
             packet.src_ip
         )
+        return (True, "SYN Flood")
+    
+    return (False, "")
