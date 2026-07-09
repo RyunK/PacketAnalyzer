@@ -2,7 +2,7 @@ from engine import PacketData, Flow
 
 def detect(packet: PacketData, flow: Flow):
 
-    print('syn_flood 모듈 실행중')
+    print(f'flow.pps: {flow.pps}, packet_count: {flow.packet_count}, flow.duration: {flow.duration}')
     print(packet.raw_packet)
 
     if flow.protocol != "TCP":
