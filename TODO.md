@@ -2,7 +2,6 @@
 - [ ] Scan 탐지 모듈
 - [ ] Flood 탐지 모듈
 - [ ] Discord 모듈
-- [ ] Flow 테이블 DB 저장
 - [ ] 웹페이지 대시보드 개발
 - [ ] 웹페이지에서 차단 기능 구현
 - [ ] 웹페이지에서 알람 기능 구현
@@ -13,6 +12,7 @@
 - [x] 저장소·dev 개설, 팀원 초대, 보호 규칙 — 팀장 RyunK
 - [x] 코드 골격 작성 — 팀장 RyunK
 - [x] amplification detection 개발 — 팀장 RyunK
+- [x] packets, warnings, flows를 DB에 저장 - 팀장 RyunK
 
 ## 코드 추가
 ### 탐지 코드
