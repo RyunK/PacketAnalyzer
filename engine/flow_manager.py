@@ -99,7 +99,7 @@ class FlowManager:
             flow=flow
         )
     
-    def remove_inactive_flows(self, db, current_time, timeout=30):
+    def remove_inactive_flows(self, db, current_time, timeout=10):
         now = current_time
 
         remove_keys = [
