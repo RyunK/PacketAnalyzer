@@ -5,8 +5,8 @@ from dataclasses import dataclass
 
 import pandas as pd
 
-IPV4_CSV_PATH = "ipv4.csv"
-COUNTRIES_CSV_PATH = "countries.csv"
+IPV4_CSV_PATH = "webpages/ipv4.csv"
+COUNTRIES_CSV_PATH = "webpages/countries.csv"
 
 # 지도에 찍을 수 있는(=위경도가 존재하는) 정상 상태
 OK_STATUS = "ok"
