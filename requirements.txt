@@ -4,3 +4,5 @@ streamlit
 discord
 python-dotenv
 watchdog
+plotly
+streamlit_autorefresh
