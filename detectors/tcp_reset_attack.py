@@ -51,7 +51,3 @@ def detect(packet: PacketData, flow: Flow):
         print("Status       : TCP Reset Attack Suspected")
 
         print("=" * 60)
-
-
-# sudo hping3 -R -p <타깃_포트> <타깃_IP> --fast --count 1000
-# sudo hping3 -R -p 443 192.168.72.129 --fast --count 1000
