@@ -166,17 +166,19 @@ class DBModule:
                           protocol, syn_count, ack_count, fin_count, rst_count))
         self.conn.commit()
 
-    def insert_white_list(self, ip):
+    def insert_white_list(self, ip:str, accepted:bool = False):
         self.cursor.execute('''
-            INSERT INTO white_list (timestamp, ip)
-            VALUES (?, ?)
-        ''', (time.time(), ip))
+            INSERT INTO white_list (timestamp, ip, accepted)
+            VALUES (?, ?, ?)
+        ''', (time.time(), ip, 1 if accepted == True else 0))
 
-    def insert_black_list(self, ip):
+    def insert_black_list(self, ip:str, accepted:bool = False):
         self.cursor.execute('''
-            INSERT INTO black_list (timestamp, ip)
-            VALUES (?, ?)
-        ''', (time.time(), ip))
+            INSERT INTO black_list (timestamp, ip, accepted)
+            VALUES (?, ?, ?)
+        ''', (time.time(), ip, 1 if accepted == True else 0))
+    
+
 
     
 
