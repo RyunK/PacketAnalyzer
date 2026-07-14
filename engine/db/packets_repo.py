@@ -68,7 +68,7 @@ class PacketRepo:
                     LIMIT 5000
                 )
             """)
-            self.conn.commit()
+            self.db.conn.commit()
     
     def flush(self):
         """
