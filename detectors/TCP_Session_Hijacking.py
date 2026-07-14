@@ -64,6 +64,6 @@ def detect(packet: PacketData, flow: Flow):
         except Exception as e:
             print("Connection Close Failed :", e)
 
-        return True, "TCP Session Hijacking"
+        return (True, "TCP Session Hijacking")
 
     return False, None
