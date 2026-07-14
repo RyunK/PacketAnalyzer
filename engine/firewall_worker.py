@@ -8,10 +8,10 @@ from engine.iptables import add_black, add_white, remove_black, remove_white
 class FirewallWorker():
 
     def __init__(self):
-        self.db = DBModule()
         self.running = True
 
     def run(self):
+        self.db = DBModule()
         while self.running:
 
             self.process_table("black_list")
