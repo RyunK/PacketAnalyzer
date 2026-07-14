@@ -83,7 +83,7 @@ class PacketProcessor:
                 continue
 
             if packet.dst_port == 22 or packet.src_port == 22:
-                return
+                continue
 
             context = self.flow_manager.update(packet)
 
