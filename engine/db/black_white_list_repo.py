@@ -63,7 +63,7 @@ class BlackWhiteRepo:
 
 
     def delete_rule(self, table: str, rule_id: int):
-        self.cursor.execute(f"""
+        self.db.cursor.execute(f"""
             DELETE FROM {table}
             WHERE id = ?
         """, (rule_id,))
