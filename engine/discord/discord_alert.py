@@ -27,7 +27,7 @@ class AlertBot:
             attack_type = row.get("attack_type", "Unknown")
             extra_fields = [f"{k}: {v}" for k, v in row.items() if k not in ("rowid", "attack_type")]
             extra_text = "\n".join(extra_fields)
-            message = f"⚠️ **공격탐지됨**\nType: {attack_type}"
+            message = f"⚠️ **공격탐지됨**\n공격유형: {attack_type}"
             if extra_text:
                 message += f"\n{extra_text}"
             return message
@@ -41,11 +41,11 @@ class AlertBot:
                     user = await self.client.fetch_user(user_id)
                     await user.send(message)   
                 except discord.Forbidden:
-                    print(f"Can't DM {user_id} — DMs disabled or no shared server.")
+                    print(f"해당 유저 {user_id}는 등록되어있지 않습니다. ")
                 except discord.NotFound:
-                    print(f"User ID {user_id} not found.")
+                    print(f"해당 유저 : {user_id} 없음")
                 except discord.HTTPException as e:
-                    print(f"Failed to send to {user_id}: {e}")
+                    print(f"전송 실패! 대상유저: {user_id}: {e}")
 
     def run(self):
         self.client.run(config.TOKEN)
