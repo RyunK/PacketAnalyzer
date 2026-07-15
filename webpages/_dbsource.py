@@ -1,41 +1,111 @@
 import sqlite3
 import os
+from typing import Any
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))  
 DB_PATH = os.path.normpath(os.path.join(BASE_DIR, "..", "packets.db"))
-TABLE_NAME = "packets"
-IP_COLUMN = "src_ip"
 
 
-def get_ip_list_from_db(db_path: str = DB_PATH, limit: int | None = None) -> list[str]:
-    """DB에서 IP 목록을 조회해 리스트로 반환.
+class dbsource:
+    def __init__(self):
+        self.db_path = DB_PATH
 
-    """
-    conn = sqlite3.connect(db_path)
-    try:
-        cur = conn.cursor()
-        query = f"SELECT {IP_COLUMN} FROM {TABLE_NAME}"
-        if limit:
-            query += f" LIMIT {limit}"
-        cur.execute(query)
-        rows = cur.fetchall()
-        return [row[0] for row in rows]
-    finally:
-        conn.close()
+    def _connect(self):
+        conn = sqlite3.connect(self.db_path)
+        conn.row_factory = sqlite3.Row
+        return conn
 
-def get_warnings_list_from_db(db_path: str = DB_PATH, limit: int | None = None) -> list[str]:
-    """warnings 테이블에서 IP 목록을 조회해 리스트로 반환.
+    def fetch(
+        self,
+        table: str,
+        columns: str | list[str] = "*",
+        where: str | None = None,
+        params: tuple = (),
+        limit: int | None = None,
+    ) -> list[dict]:
+        
 
-    """
-    conn = sqlite3.connect(db_path)
-    try:
-        cur = conn.cursor()
-        query = f"SELECT {IP_COLUMN} FROM warnings"
-        if limit:
-            query += f" LIMIT {limit}"
-        cur.execute(query)
-        rows = cur.fetchall()
-        return [row[0] for row in rows]
-    finally:
-        conn.close()
+        if isinstance(columns, list):
+            columns = ", ".join(columns)
 
+        query = f"SELECT {columns} FROM {table}"
+
+        if where:
+            query += f" WHERE {where}"
+
+        if limit is not None:
+            query += " LIMIT ?"
+            params += (limit,)
+
+        conn = self._connect()
+
+        try:
+            cur = conn.cursor()
+            cur.execute(query, params)
+            return [dict(row) for row in cur.fetchall()]
+        finally:
+            conn.close()
+
+    def column(
+        self,
+        table: str,
+        column: str,
+        where: str | None = None,
+        params: tuple = (),
+        limit: int | None = None,
+    ) -> list[Any]:
+        """
+        Return a single column as a list.
+
+        Example:
+            db.column("packets", "src_ip")
+        """
+
+        rows = self.fetch(
+            table=table,
+            columns=column,
+            where=where,
+            params=params,
+            limit=limit,
+        )
+
+        return [row[column] for row in rows]
+
+    def row(
+        self,
+        table: str,
+        where: str,
+        params: tuple = (),
+    ) -> dict | None:
+        """
+        Return a single row.
+        """
+
+        rows = self.fetch(
+            table=table,
+            where=where,
+            params=params,
+            limit=1,
+        )
+
+        return rows[0] if rows else None
+
+    def execute(
+        self,
+        query: str,
+        params: tuple = (),
+    ) -> None:
+        """
+        Execute INSERT, UPDATE, DELETE, CREATE...
+        """
+
+        conn = self._connect()
+
+        try:
+            cur = conn.cursor()
+            cur.execute(query, params)
+            conn.commit()
+        finally:
+            conn.close()
+   
+   
