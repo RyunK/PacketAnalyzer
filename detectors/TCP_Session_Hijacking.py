@@ -4,7 +4,7 @@ import os
 
 
 def detect(packet: PacketData, flow: Flow):
-    print("실행중")
+    # print("실행중")
     if flow.protocol != "TCP":
         return False, None
 

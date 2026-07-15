@@ -5,7 +5,7 @@ import os
 
 def detect(packet: PacketData, flow: Flow):
     # 엔진이 패킷을 읽어 들일 때마다 터미널에 실시간 수집 상태를 출력합니다.
-    print("실행중")
+    # print("실행중")
     
     # 세션 하이재킹은 TCP 프로토콜의 취약점을 노리므로 TCP가 아닌 패킷은 즉시 걸러냅니다.
     if flow.protocol != "TCP":
