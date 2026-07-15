@@ -32,7 +32,7 @@ st.markdown("""
     font-size:28px;
     margin:0;
 ">
-🛡 Packet Analyzer
+Home
 </h1>
 """, unsafe_allow_html=True)
 
@@ -77,6 +77,8 @@ st.markdown("""
 /* metric 전체 박스 */
 [data-testid="stMetric"] {
     padding: 8px 10px;
+    border: 1px solid #4A4A4A;   /* 진회색 실선 테두리 */
+    border-radius: 10px;  
 }
 
 /* 제목(Label) */
@@ -96,7 +98,13 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-col1, col2, col3, col4 = st.columns(4)
+# packet_size 합계 (바이트 단위라고 가정)
+total_bytes = packets["packet_size"].sum()
+
+# bps 계산 (비트 단위)
+bps = (total_bytes * 8) / 60
+
+col1, col2, col3, col4, col5 = st.columns(5)
 
 with col1:
     st.metric(
@@ -112,16 +120,21 @@ with col2:
 
 with col3:
     st.metric(
-        "Warnings",
-        warnings_cnt['cnt']
+        "BPS",
+        f"{bps/1000:.1f} Kbps"
     )
 
 with col4:
     st.metric(
+        "Warnings",
+        warnings_cnt['cnt']
+    )
+
+with col5:
+    st.metric(
         "Active Source IP",
         packets["src_ip"].nunique()
     )
-
 
 # st.divider()
 
