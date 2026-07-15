@@ -268,9 +268,17 @@ def render_detail(row: pd.Series, kind: str = "packet") -> str:
     """
 
     body_rows = []
+
+    add_row(body_rows, "Timestamp", d.get("timestamp", "-"))
     add_row(body_rows, "Protocol", proto_badge)
-    add_row(body_rows, "Src IP", src_ip)
-    add_row(body_rows, "Dst IP", dst_ip)
+    add_row(body_rows, "Src IP", d.get("src_ip", "-"))
+    add_row(body_rows, "Dst IP", d.get("dst_ip", "-"))
+    add_row(body_rows, "Src Port", d.get("src_port", "-"))
+    add_row(body_rows, "Dst Port", d.get("dst_port", "-"))
+    add_row(body_rows, "Packet Size", f"{d.get('packet_size',0):,} B")
+    add_row(body_rows, "Payload Size", f"{d.get('payload_size',0):,} B")
+    add_row(body_rows, "TTL", ttl_badge)
+    add_row(body_rows, "TCP Flags", flag_badge)
     if "src_port" in d:
         add_row(body_rows, "Src Port", src_port if src_port not in (None, "", "nan") else "-")
     if "dst_port" in d:
