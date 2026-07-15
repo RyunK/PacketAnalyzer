@@ -147,6 +147,11 @@ html, body, [class*="css"] {
 .detail-group-title:first-of-type {
     margin-top: 0;
 }
+.detail-group {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    column-gap: 28px;
+}
 .detail-row {
     display: flex;
     justify-content: space-between;
@@ -212,8 +217,19 @@ def _flatten_html(html: str) -> str:
     return "\n".join(line.lstrip() for line in html.strip("\n").splitlines())
 
 
+def _format_ts(value) -> str:
+    """나노초 없이 초 단위까지만 보여주는 타임스탬프 포맷"""
+    if isinstance(value, pd.Timestamp):
+        if pd.isna(value):
+            return "-"
+        return value.strftime("%Y-%m-%d %H:%M:%S")
+    if value in (None, "", "nan"):
+        return "-"
+    return str(value)[:19]
+
+
 def render_detail(row: pd.Series, kind: str = "packet") -> str:
-    """선택된 packet/flow row를 컬러풀한 그룹형 카드 HTML로 렌더링"""
+    """선택된 packet/flow row를 컴팩트한 2열 카드 HTML로 렌더링"""
     d = row.to_dict()
 
     kind_badge = (
@@ -223,10 +239,9 @@ def render_detail(row: pd.Series, kind: str = "packet") -> str:
     )
 
     def badge(value, bg, fg):
-        text = value if value not in (None, "", "nan") else "-"
         if value in (None, "", "nan"):
             return '<span class="badge badge-flag-empty">-</span>'
-        return f'<span class="badge" style="background:{bg};color:{fg};">{text}</span>'
+        return f'<span class="badge" style="background:{bg};color:{fg};">{value}</span>'
 
     def add_row(rows_list, label, value_html):
         rows_list.append(
@@ -238,14 +253,8 @@ def render_detail(row: pd.Series, kind: str = "packet") -> str:
     colors = _protocol_color(proto)
     proto_badge = badge(proto, colors["bg"], colors["fg"])
     flag_badge = badge(d.get("tcp_flags", ""), "#eef2ff", "#4f46e5")
-    ttl_val = d.get("ttl", None)
-    ttl_badge = (
-        f'<span class="badge badge-ttl">{ttl_val}</span>'
-        if ttl_val not in (None, "", "nan")
-        else '<span class="badge badge-flag-empty">-</span>'
-    )
 
-    # ---- 헤더: 그라데이션 + Src -> Dst 흐름 라인 ----
+    ts_display = _format_ts(d.get("timestamp"))
     src_ip = d.get("src_ip", "-")
     dst_ip = d.get("dst_ip", "-")
     src_port = d.get("src_port")
@@ -256,7 +265,7 @@ def render_detail(row: pd.Series, kind: str = "packet") -> str:
     header = f"""
     <div class="detail-header" style="--accent-a:{colors['accent']}; --accent-b:{colors['accent']}cc;">
         <div class="detail-id-row">
-            <span class="detail-id">#{d.get('id', '-')} · {d.get('timestamp', '-')}</span>
+            <span class="detail-id">#{d.get('id', '-')} · {ts_display}</span>
             {kind_badge}
         </div>
         <div class="detail-flow-line">
@@ -268,43 +277,35 @@ def render_detail(row: pd.Series, kind: str = "packet") -> str:
     """
 
     body_rows = []
+    if kind == "packet":
+        add_row(body_rows, "들어온 시간", ts_display)
+        add_row(body_rows, "타입", proto_badge)
+        add_row(body_rows, "출발지 IP", src_ip)
+        add_row(body_rows, "목적지 IP", dst_ip)
+        add_row(body_rows, "출발지 포트", src_port if src_port not in (None, "", "nan") else "-")
+        add_row(body_rows, "목적지 포트", dst_port if dst_port not in (None, "", "nan") else "-")
+        add_row(body_rows, "Packet 크기", f"{d.get('packet_size', 0):,} B")
+        add_row(body_rows, "Payload 크기", f"{d.get('payload_size', 0):,} B")
+        add_row(body_rows, "TCP Flags", flag_badge)
+    else:
+        add_row(body_rows, "타입", proto_badge)
+        add_row(body_rows, "출발지 IP", src_ip)
+        add_row(body_rows, "목적지 IP", dst_ip)
+        add_row(body_rows, "출발지 Port", src_port if src_port not in (None, "", "nan") else "-")
+        add_row(body_rows, "목적지 Port", dst_port if dst_port not in (None, "", "nan") else "-")
+        if "packet_count" in d:
+            add_row(body_rows, "Packet 수", f'{d["packet_count"]:,}')
+        if "total_bytes" in d:
+            add_row(body_rows, "Total Bytes", f'{d["total_bytes"]:,} B')
+        if "first_seen" in d:
+            add_row(body_rows, "First Seen", _format_ts(d.get("first_seen")))
+        if "last_seen" in d:
+            add_row(body_rows, "Last Seen", _format_ts(d.get("last_seen")))
 
-    add_row(body_rows, "Timestamp", d.get("timestamp", "-"))
-    add_row(body_rows, "Protocol", proto_badge)
-    add_row(body_rows, "Src IP", d.get("src_ip", "-"))
-    add_row(body_rows, "Dst IP", d.get("dst_ip", "-"))
-    add_row(body_rows, "Src Port", d.get("src_port", "-"))
-    add_row(body_rows, "Dst Port", d.get("dst_port", "-"))
-    add_row(body_rows, "Packet Size", f"{d.get('packet_size',0):,} B")
-    add_row(body_rows, "Payload Size", f"{d.get('payload_size',0):,} B")
-    add_row(body_rows, "TTL", ttl_badge)
-    add_row(body_rows, "TCP Flags", flag_badge)
-    if "src_port" in d:
-        add_row(body_rows, "Src Port", src_port if src_port not in (None, "", "nan") else "-")
-    if "dst_port" in d:
-        add_row(body_rows, "Dst Port", dst_port if dst_port not in (None, "", "nan") else "-")
-    conn_html = "".join(body_rows)
-
-    pkt_rows = []
-    if "packet_size" in d:
-        add_row(pkt_rows, "Packet Size", f'{d["packet_size"]:,} B')
-    if "payload_size" in d:
-        add_row(pkt_rows, "Payload Size", f'{d["payload_size"]:,} B')
-    if "ttl" in d:
-        add_row(pkt_rows, "TTL", ttl_badge)
-    add_row(pkt_rows, "TCP Flags", flag_badge)
-    if "total_bytes" in d:
-        add_row(pkt_rows, "Total Bytes", f'{d["total_bytes"]:,} B')
-    if "packet_count" in d:
-        add_row(pkt_rows, "Packet Count", f'{d["packet_count"]:,}')
-    if "first_seen" in d:
-        add_row(pkt_rows, "First Seen", d.get("first_seen", "-"))
-    if "last_seen" in d:
-        add_row(pkt_rows, "Last Seen", d.get("last_seen", "-"))
-    pkt_html = "".join(pkt_rows)
+    body_html = f'<div class="detail-group">{"".join(body_rows)}</div>'
 
     raw_html = ""
-    if "raw_packet" in d and d.get("raw_packet") not in (None, "", "nan"):
+    if kind == "packet" and d.get("raw_packet") not in (None, "", "nan"):
         raw_html = f"""
         <div class="detail-group-title">🧬 Raw Packet</div>
         <div class="detail-raw">{d['raw_packet']}</div>
@@ -314,10 +315,7 @@ def render_detail(row: pd.Series, kind: str = "packet") -> str:
     <div class="detail-card">
         {header}
         <div class="detail-body">
-            <div class="detail-group-title">🔗 연결 정보</div>
-            {conn_html}
-            <div class="detail-group-title">📦 패킷 정보</div>
-            {pkt_html}
+            {body_html}
             {raw_html}
         </div>
     </div>
@@ -430,7 +428,7 @@ def build_flows(df: pd.DataFrame) -> pd.DataFrame:
 # ----------------------------------------------------------------------
 # Header
 # ----------------------------------------------------------------------
-st.markdown("## 🛡️ Packet Analyzer Dashboard")
+st.markdown("## 🛡️ 상세정보")
 st.caption("Real-Time Network Traffic Monitoring")
 
 try:
@@ -457,10 +455,10 @@ AVG_FLOW_PACKETS = flows_df["packet_count"].mean() if "packet_count" in flows_df
 # ----------------------------------------------------------------------
 c1, c2, c3, c4, c5 = st.columns(5)
 card_data = [
-    (c1, "Total Packets", f"{TOTAL_PACKETS:,}"),
-    (c2, "Flows", f"{TOTAL_FLOWS:,}"),
-    (c3, "TCP Packets", f"{TCP_PACKETS:,}"),
-    (c4, "UDP Packets", f"{UDP_PACKETS:,}"),
+    (c1, "총 Packets", f"{TOTAL_PACKETS:,}"),
+    (c2, "총 Flows", f"{TOTAL_FLOWS:,}"),
+    (c3, "TCP Packets 수", f"{TCP_PACKETS:,}"),
+    (c4, "UDP Packets 수", f"{UDP_PACKETS:,}"),
     (c5, "Unique IP", f"{UNIQUE_IP:,}"),
 ]
 for col, label, value in card_data:
@@ -482,7 +480,7 @@ s1, s2 = st.columns(2)
 with s1:
     st.markdown(
         f"""<div class="metric-card">
-                <div class="metric-label">Average Packet Size</div>
+                <div class="metric-label">평균 Packet 크기</div>
                 <div class="metric-value">{AVG_PACKET_SIZE:.1f} B</div>
             </div>""",
         unsafe_allow_html=True,
@@ -490,7 +488,7 @@ with s1:
 with s2:
     st.markdown(
         f"""<div class="metric-card">
-                <div class="metric-label">Average Flow Packets</div>
+                <div class="metric-label">평균 Flow Packets</div>
                 <div class="metric-value">{AVG_FLOW_PACKETS:.1f}</div>
             </div>""",
         unsafe_allow_html=True,
@@ -509,6 +507,26 @@ st.markdown('<div class="section-title">📦 Traffic Monitor</div>', unsafe_allo
 
 left, right = st.columns([1, 1])
 
+# ---- 탭 간 선택 상호배타 처리 (한쪽 선택 시 반대쪽 자동 해제) ----
+if "prev_packets_sel" not in st.session_state:
+    st.session_state.prev_packets_sel = ()
+if "prev_flows_sel" not in st.session_state:
+    st.session_state.prev_flows_sel = ()
+
+_packets_state = st.session_state.get("packets_table")
+_flows_state = st.session_state.get("flows_table")
+
+_packets_rows_now = tuple(_packets_state["selection"]["rows"]) if _packets_state else ()
+_flows_rows_now = tuple(_flows_state["selection"]["rows"]) if _flows_state else ()
+
+_packets_changed = _packets_rows_now != st.session_state.prev_packets_sel
+_flows_changed = _flows_rows_now != st.session_state.prev_flows_sel
+
+if _packets_changed and _packets_rows_now:
+    st.session_state["flows_table"] = {"selection": {"rows": [], "columns": []}}
+elif _flows_changed and _flows_rows_now:
+    st.session_state["packets_table"] = {"selection": {"rows": [], "columns": []}}
+
 selected_rows = []
 selected_df = pd.DataFrame()
 selected_kind = "packet"
@@ -517,7 +535,7 @@ with left:
     tab_packets, tab_flows = st.tabs(["📄 Packets", "🔀 Flows"])
 
     with tab_packets:
-        packets_full = filtered.reset_index(drop=True)  # 전체 컬럼 보존 (Detail용)
+        packets_full = filtered.reset_index(drop=True)
         show_cols = [c for c in ["id", "timestamp", "src_ip", "protocol", "tcp_flags"] if c in packets_full.columns]
         display_df = packets_full[show_cols]
 
@@ -554,8 +572,16 @@ with left:
                 selected_df = flow_display
                 selected_kind = "flow"
 
+# 이번 런의 최종 선택 상태를 다음 비교용으로 저장
+st.session_state.prev_packets_sel = tuple(
+    st.session_state.get("packets_table", {}).get("selection", {}).get("rows", [])
+)
+st.session_state.prev_flows_sel = tuple(
+    st.session_state.get("flows_table", {}).get("selection", {}).get("rows", [])
+)
+
 with right:
-    st.markdown('<div class="section-title">📄 Detail</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-title">📄 상세정보 </div>', unsafe_allow_html=True)
     if selected_rows:
         row = selected_df.iloc[selected_rows[0]]
         st.markdown(render_detail(row, kind=selected_kind), unsafe_allow_html=True)
