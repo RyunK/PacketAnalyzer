@@ -10,7 +10,7 @@ def detect(packet: PacketData, flow: Flow):
     if flow.protocol != "UDP":
         return
 
-    payload_len = len(packet.payload) if packet.payload else 0
+    packet.payload_size if packet.payload_size else 0
 
     is_high_rate = flow.pps > PPS_THRESHOLD and flow.bps > BPS_THRESHOLD
     is_small_packet_flood = flow.avg_packet_size < SMALL_PACKET_SIZE
@@ -20,7 +20,7 @@ def detect(packet: PacketData, flow: Flow):
             "[UDP Flood]",
             packet.src_ip,
             f"pps={flow.pps}, bps={flow.bps}, "
-            f"avg_size={flow.avg_packet_size:.1f}B, payload_len={payload_len}B",
+            f"avg_size={flow.avg_packet_size:.1f}B, payload_len={packet.payload_size}B",
         )
         return (True, "UDP Flood")
 
