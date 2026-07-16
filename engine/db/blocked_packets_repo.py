@@ -22,7 +22,7 @@ class BlockedRepo:
             );
         ''')
 
-    def insert_packet_table(self, timestamp, src_ip, dst_ip, src_port, dst_port, protocol, packet_size, payload_size, tcp_flags):
+    def insert_blocked_table(self, timestamp, src_ip, dst_ip, src_port, dst_port, protocol, packet_size, payload_size, tcp_flags):
         '''
         패킷 정보를 쌓아두었다가 100개 혹은 1초마다 한번에 DB에 저장
         '''
@@ -44,7 +44,7 @@ class BlockedRepo:
             # print("100개의 패킷이 DB에 저장되었습니다.")
   
 
-    def cleanup_packets(self):
+    def cleanup_blocked(self):
         one_hour_ago = int(time.time()) - 3600
 
         # 1시간이 지난 패킷 삭제
@@ -69,7 +69,7 @@ class BlockedRepo:
             """)
             self.db.conn.commit()
     
-    def flush(self):
+    def flush_blocked(self):
         """
         버퍼에 있는 패킷들을 전부 저장한다.
         """
