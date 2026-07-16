@@ -39,7 +39,7 @@ class BlockedRepo:
             ''', self.packet_buffer)
             self.db.conn.commit()
             self.packet_buffer.clear()
-            self.cleanup_packets()
+            self.cleanup_blocked()
             self.last_packet_flush = time.time()
             # print("100개의 패킷이 DB에 저장되었습니다.")
   
