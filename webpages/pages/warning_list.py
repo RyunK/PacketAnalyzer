@@ -301,7 +301,7 @@ base = alt.Chart(chart_df).encode(
 )
 
 bars = base.mark_bar(
-    size=26, cornerRadiusTopLeft=4, cornerRadiusTopRight=4,
+    size=26, cornerRadiusTopLeft=4, cornerRadiusTopRight=4 ,
 ).encode(
     color=alt.Color(
         "Grade",
