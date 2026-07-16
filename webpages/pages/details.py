@@ -8,6 +8,7 @@ import plotly.graph_objects as go
 import pycountry
 import streamlit as st
 from zoneinfo import ZoneInfo
+from webpages.functions.titles  import get_h2
 
 
 # ----------------------------------------------------------------------
@@ -26,13 +27,14 @@ PROTOCOL_COLORS = {
 }
 DEFAULT_COLOR = {"bg": "#f3f4f6", "fg": "#6b7280", "accent": "#9ca3af"}
 
-css_path = Path(__file__).resolve().parent.parent
+from  webpages.css.st_header import _setting
+from  webpages.css.st_metric import metric_cards
+from  webpages.css.st_alertbox import alret_box_style
 
-if str(css_path) not in sys.path:
-    sys.path.insert(0, str(css_path))
-from css.st_header import CUSTOM_CSS
+_setting()
+metric_cards()
+alret_box_style()
 
-st.markdown(CUSTOM_CSS, unsafe_allow_html=True)
 
 
 def _protocol_color(proto: str) -> dict:
@@ -455,13 +457,10 @@ card_data = [
 ]
 for col, label, value in card_data:
     with col:
-        st.markdown(
-            f"""<div class="metric-card">
-                    <div class="metric-label">{label}</div>
-                    <div class="metric-value">{value}</div>
-                </div>""",
-            unsafe_allow_html=True,
-        )
+        st.metric(
+            label,
+            value)
+                
 
 st.markdown("<hr/>", unsafe_allow_html=True)
 
@@ -470,25 +469,18 @@ st.markdown("<hr/>", unsafe_allow_html=True)
 # ----------------------------------------------------------------------
 s1, s2 = st.columns(2)
 with s1:
-    st.markdown(
-        f"""<div class="metric-card">
-                <div class="metric-label">평균 Packet 크기</div>
-                <div class="metric-value">{AVG_PACKET_SIZE:.1f} B</div>
-            </div>""",
-        unsafe_allow_html=True,
+    st.metric(
+        "평균 Packet 크기",
+        f"{AVG_PACKET_SIZE:.1f}"
     )
 with s2:
-    st.markdown(
-        f"""<div class="metric-card">
-                <div class="metric-label">평균 Flow Packets</div>
-                <div class="metric-value">{AVG_FLOW_PACKETS:.1f}</div>
-            </div>""",
-        unsafe_allow_html=True,
+    st.metric(
+        "평균 Flow Packets",
+        f"{AVG_FLOW_PACKETS:.1f}"
     )
 
 filtered = packets_df.copy()
 
-st.caption(f"Packets : {len(filtered):,} | Flows : {TOTAL_FLOWS:,}")
 
 # 지도 piechart ui 
 if "src_ip" not in packets_df.columns:
@@ -546,9 +538,9 @@ with title_col:
 
 title_col, refresh_col = st.columns([8, 1])
 with title_col:
-    st.markdown('<div class="section-title">📦 Traffic Monitor</div>', unsafe_allow_html=True)
+    st.markdown(get_h2("📦 Traffic Monitor"), unsafe_allow_html=True)
 with refresh_col:
-    if st.button("🔄 새로고침", use_container_width=True):
+    if st.button("🔄 새로고침", width='stretch'):
         load_packets.clear()
         st.session_state.packets_key_ver += 1   # 위젯 key 변경 -> 완전히 새로 마운트 -> 체크 해제
         st.session_state.flows_key_ver += 1
@@ -595,7 +587,7 @@ with left:
 
         event = st.dataframe(
             display_df,
-            use_container_width=True,
+            width='stretch',
             height=380,
             hide_index=True,
             on_select="rerun",
@@ -614,7 +606,7 @@ with left:
             flow_display = flows_df.reset_index(drop=True)
             flow_event = st.dataframe(
                 flow_display,
-                use_container_width=True,
+                width='stretch',
                 height=380,
                 hide_index=True,
                 on_select="rerun",
