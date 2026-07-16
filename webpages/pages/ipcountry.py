@@ -171,34 +171,4 @@ else:
         st.plotly_chart(fig_geo, width="stretch", config={"displayModeBar": False})
     with col_pie:
         st.plotly_chart(fig_pie, width="stretch", config={"displayModeBar": False})
- 
-    
-    # ---- 국가 선택(클릭) -> 상세 정보 ----
-    # st.markdown("**국가를 선택하면 상세 접속 내역을 볼 수 있습니다.**")
-    # country_event = st.dataframe(
-    #     count_df[["country_code", "country_name", "count"]],
-    #     width="stretch",
-    #     hide_index=True,
-    #     on_select="rerun",
-    #     selection_mode="single-row",
-    #     key="country_table",
-    # )
- 
-    # selected_rows = country_event.selection.rows if country_event.selection else []
-    # if selected_rows:
-    #     selected_country = count_df.iloc[selected_rows[0]]
-    #     st.subheader(
-    #         f"📍 {selected_country['country_name']} ({selected_country['country_code']}) 상세"
-    #     )
-    #     st.metric("총 접속 건수", int(selected_country["count"]))
- 
-    #     country_ip_df = (
-    #         ok_df[ok_df["country_code"] == selected_country["country_code"]]
-    #         .groupby("ip")
-    #         .size()
-    #         .reset_index(name="접속 횟수")
-    #         .sort_values("접속 횟수", ascending=False)
-    #         .reset_index(drop=True)
-    #     )
-    #     st.dataframe(country_ip_df, width="stretch", hide_index=True)
- 
+
