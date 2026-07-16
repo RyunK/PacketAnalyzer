@@ -95,12 +95,17 @@ def grade_display(counter: int) -> str:
 def format_ts(value) -> str:
     """DB에 저장된 timestamp(유닉스 epoch 또는 문자열)를 사람이 읽기 쉬운 형태로 변환한다."""
     try:
-        dt = pd.to_datetime(float(value), unit="s")
+        # 1. 숫자형 타임스탬프를 UTC 기준 datetime으로 변환
+        dt = pd.to_datetime(float(value), unit='s', utc=True)
+        
+        # 2. 한국 시간(Asia/Seoul)으로 시간대 변환
+        dt_kst = dt.tz_convert('Asia/Seoul')
+        
+        return dt_kst.strftime('%Y-%m-%d %H:%M:%S')
     except (ValueError, TypeError):
-        dt = pd.to_datetime(value, errors="coerce")
-    if pd.isna(dt):
         return str(value)
-    return dt.strftime("%Y-%m-%d %H:%M:%S")
+
+
 
 
 def field_html(label, value):
