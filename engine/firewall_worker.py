@@ -12,6 +12,8 @@ class FirewallWorker():
 
     def run(self):
         self.db = DBModule()
+        self.first_run()
+        
         while self.running:
 
             self.process_table("black_list")
@@ -21,6 +23,23 @@ class FirewallWorker():
 
     def stop(self):
         self.running = False
+
+    def first_run(self):
+        for rule_id, ip in self.db.get_pending_rules("black_list"):
+            try:
+                add_black(ip)
+                self.db.accept_rule("black_list", rule_id)
+
+            except Exception as e:
+                print(f"[Firewall] add failed : {ip} ({e})")
+
+        for rule_id, ip in self.db.get_pending_rules("white_list"):
+            try:
+                add_black(ip)
+                self.db.accept_rule("black_list", rule_id)
+
+            except Exception as e:
+                print(f"[Firewall] add failed : {ip} ({e})")
 
     def process_table(self, table):
 
