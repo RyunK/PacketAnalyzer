@@ -75,7 +75,7 @@ def check_new_warning():
         st.session_state.last_flashed_ts = None
 
     is_new = (
-        (now_ts - latest_ts) < 1.2
+        (now_ts - latest_ts) < 5
         and latest_ts != st.session_state.last_flashed_ts
     )
 
@@ -100,8 +100,6 @@ def check_new_warning():
         </style>
         <div class="flash-overlay"></div>
         """, unsafe_allow_html=True)
-
-# check_new_warning()
 
 ########################################################
 # KPI
