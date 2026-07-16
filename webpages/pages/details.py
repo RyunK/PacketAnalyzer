@@ -16,6 +16,11 @@ DB 연동:
 
 import pandas as pd
 import streamlit as st
+import importlib
+import os
+import sys
+from zoneinfo import ZoneInfo
+
 
 # ----------------------------------------------------------------------
 # 기본 설정
@@ -254,7 +259,7 @@ def render_detail(row: pd.Series, kind: str = "packet") -> str:
     proto_badge = badge(proto, colors["bg"], colors["fg"])
     flag_badge = badge(d.get("tcp_flags", ""), "#eef2ff", "#4f46e5")
 
-    ts_display = _format_ts(d.get("timestamp"))
+    ts_display = _format_ts(d.get("timestamp")) if kind == "packet" else _format_ts(d.get("first_seen"))
     src_ip = d.get("src_ip", "-")
     dst_ip = d.get("dst_ip", "-")
     src_port = d.get("src_port")
@@ -323,7 +328,6 @@ def render_detail(row: pd.Series, kind: str = "packet") -> str:
     return _flatten_html(html)
 
 
-
 # ----------------------------------------------------------------------
 # 실제 DB 로더 (_dbsource.py 연동)
 # ----------------------------------------------------------------------
@@ -334,9 +338,7 @@ def _import_dbsource():
 
     예) webpages/_dbsource.py 를 webpages/pages/packet_dashboard.py 에서 사용하는 구조
     """
-    import importlib
-    import os
-    import sys
+    
 
     here = os.path.dirname(os.path.abspath(__file__))
     candidate_dirs = [here, os.path.dirname(here), os.path.dirname(os.path.dirname(here))]
@@ -355,27 +357,37 @@ def _import_dbsource():
     raise last_error or ModuleNotFoundError("_dbsource 모듈을 찾을 수 없습니다.")
 
 
+KST = ZoneInfo("Asia/Seoul")
+
 def _parse_timestamp_column(series: pd.Series) -> pd.Series:
     """
     timestamp 컬럼이 문자열(ISO 포맷 등)이면 그대로 파싱하고,
     숫자(유닉스 타임스탬프)면 자릿수를 보고 s/ms/us/ns 단위를 자동 판별해서 변환한다.
-    (숫자를 무작정 ns로 해석하면 1970년 근처로 잘못 나오는 문제를 방지)
+    DB의 시간은 UTC 기준이므로, 이를 UTC로 명시적으로 localize한 뒤
+    Asia/Seoul(KST)로 변환한다.
     """
     if pd.api.types.is_numeric_dtype(series):
         sample = series.dropna()
         if sample.empty:
-            return pd.to_datetime(series, errors="coerce")
-        magnitude = abs(float(sample.iloc[0]))
-        if magnitude >= 1e17:
-            unit = "ns"
-        elif magnitude >= 1e14:
-            unit = "us"
-        elif magnitude >= 1e11:
-            unit = "ms"
+            parsed = pd.to_datetime(series, errors="coerce")
         else:
-            unit = "s"
-        return pd.to_datetime(series, unit=unit, errors="coerce")
-    return pd.to_datetime(series, errors="coerce")
+            magnitude = abs(float(sample.iloc[0]))
+            if magnitude >= 1e17:
+                unit = "ns"
+            elif magnitude >= 1e14:
+                unit = "us"
+            elif magnitude >= 1e11:
+                unit = "ms"
+            else:
+                unit = "s"
+            parsed = pd.to_datetime(series, unit=unit, errors="coerce")
+    else:
+        parsed = pd.to_datetime(series, errors="coerce")
+
+    # UTC로 명시적으로 지정 후 KST로 변환 (naive면 UTC로 간주)
+    if parsed.dt.tz is None:
+        parsed = parsed.dt.tz_localize("UTC")
+    return parsed.dt.tz_convert(KST)
 
 
 def _load_from_db() -> pd.DataFrame:
@@ -404,7 +416,7 @@ def load_packets() -> pd.DataFrame:
 
 
 def build_flows(df: pd.DataFrame) -> pd.DataFrame:
-    """DB 컬럼 유무에 따라 유연하게 flow(5-tuple 기준) 집계"""
+    """5-tuple 중 src_port는 그룹핑에서 제외 (묶지 않음), 대신 표시용으로만 보여줌"""
     group_cols = [c for c in ["src_ip", "dst_ip", "src_port", "dst_port", "protocol"] if c in df.columns]
     if not group_cols:
         return pd.DataFrame()
@@ -412,6 +424,7 @@ def build_flows(df: pd.DataFrame) -> pd.DataFrame:
     agg_kwargs = {}
     count_base = "id" if "id" in df.columns else group_cols[0]
     agg_kwargs["packet_count"] = (count_base, "count")
+
     if "packet_size" in df.columns:
         agg_kwargs["total_bytes"] = ("packet_size", "sum")
     if "timestamp" in df.columns:
@@ -420,8 +433,25 @@ def build_flows(df: pd.DataFrame) -> pd.DataFrame:
     if "protocol" not in group_cols and "protocol" in df.columns:
         agg_kwargs["protocol"] = ("protocol", "first")
 
+    # src_port는 묶지는 않되, 표시용으로 종류 수 / 대표값을 뽑음
+    if "src_port" in df.columns:
+        agg_kwargs["src_port_count"] = ("src_port", "nunique")
+        agg_kwargs["src_port_sample"] = ("src_port", "first")
+
     flow = df.groupby(group_cols, dropna=False).agg(**agg_kwargs).reset_index()
     flow.insert(0, "id", range(1, len(flow) + 1))
+
+    # 화면 표시용 Src Port 컬럼 만들기 (여러 개면 "n개", 하나면 그 값)
+    if "src_port_count" in flow.columns:
+        flow["src_port"] = flow.apply(
+            lambda r: str(r["src_port_sample"]) if r["src_port_count"] <= 1
+            else f'{r["src_port_sample"]} 외 {int(r["src_port_count"]) - 1}개',
+            axis=1,
+        )
+        flow = flow.drop(columns=["src_port_count", "src_port_sample"])
+        
+        
+
     return flow
 
 
@@ -503,18 +533,45 @@ st.markdown("<hr/>", unsafe_allow_html=True)
 # ----------------------------------------------------------------------
 # Traffic Monitor  (Packets / Flows 탭 + Detail 패널)
 # ----------------------------------------------------------------------
-st.markdown('<div class="section-title">📦 Traffic Monitor</div>', unsafe_allow_html=True)
+title_col, refresh_col = st.columns([8, 1])
+with title_col:
+    def _clear_selection_state(*keys):
+        """key 자체를 삭제해서 위젯이 선택 없는 상태로 완전히 초기화되게 함"""
+        for k in keys:
+            if k in st.session_state:
+                del st.session_state[k]
+
+title_col, refresh_col = st.columns([8, 1])
+with title_col:
+    if "packets_key_ver" not in st.session_state:
+        st.session_state.packets_key_ver = 0
+    if "flows_key_ver" not in st.session_state:
+        st.session_state.flows_key_ver = 0
+    if "prev_packets_sel" not in st.session_state:
+        st.session_state.prev_packets_sel = ()
+    if "prev_flows_sel" not in st.session_state:
+        st.session_state.prev_flows_sel = ()
+
+title_col, refresh_col = st.columns([8, 1])
+with title_col:
+    st.markdown('<div class="section-title">📦 Traffic Monitor</div>', unsafe_allow_html=True)
+with refresh_col:
+    if st.button("🔄 새로고침", use_container_width=True):
+        load_packets.clear()
+        st.session_state.packets_key_ver += 1   # 위젯 key 변경 -> 완전히 새로 마운트 -> 체크 해제
+        st.session_state.flows_key_ver += 1
+        st.session_state.prev_packets_sel = ()
+        st.session_state.prev_flows_sel = ()
+        st.rerun()
 
 left, right = st.columns([1, 1])
 
-# ---- 탭 간 선택 상호배타 처리 (한쪽 선택 시 반대쪽 자동 해제) ----
-if "prev_packets_sel" not in st.session_state:
-    st.session_state.prev_packets_sel = ()
-if "prev_flows_sel" not in st.session_state:
-    st.session_state.prev_flows_sel = ()
+packets_key = f"packets_table_{st.session_state.packets_key_ver}"
+flows_key = f"flows_table_{st.session_state.flows_key_ver}"
 
-_packets_state = st.session_state.get("packets_table")
-_flows_state = st.session_state.get("flows_table")
+# ---- 탭 간 선택 상호배타 처리 ----
+_packets_state = st.session_state.get(packets_key)
+_flows_state = st.session_state.get(flows_key)
 
 _packets_rows_now = tuple(_packets_state["selection"]["rows"]) if _packets_state else ()
 _flows_rows_now = tuple(_flows_state["selection"]["rows"]) if _flows_state else ()
@@ -523,9 +580,14 @@ _packets_changed = _packets_rows_now != st.session_state.prev_packets_sel
 _flows_changed = _flows_rows_now != st.session_state.prev_flows_sel
 
 if _packets_changed and _packets_rows_now:
-    st.session_state["flows_table"] = {"selection": {"rows": [], "columns": []}}
+    # flows 쪽 key를 바꿔서 완전히 새 위젯으로 -> 체크 확실히 풀림
+    st.session_state.flows_key_ver += 1
+    flows_key = f"flows_table_{st.session_state.flows_key_ver}"
+    _flows_rows_now = ()
 elif _flows_changed and _flows_rows_now:
-    st.session_state["packets_table"] = {"selection": {"rows": [], "columns": []}}
+    st.session_state.packets_key_ver += 1
+    packets_key = f"packets_table_{st.session_state.packets_key_ver}"
+    _packets_rows_now = ()
 
 selected_rows = []
 selected_df = pd.DataFrame()
@@ -546,7 +608,7 @@ with left:
             hide_index=True,
             on_select="rerun",
             selection_mode="single-row",
-            key="packets_table",
+            key=packets_key,
         )
         if event is not None and event.selection.rows:
             selected_rows = event.selection.rows
@@ -565,23 +627,22 @@ with left:
                 hide_index=True,
                 on_select="rerun",
                 selection_mode="single-row",
-                key="flows_table",
+                key=flows_key,
             )
             if flow_event is not None and flow_event.selection.rows:
                 selected_rows = flow_event.selection.rows
                 selected_df = flow_display
                 selected_kind = "flow"
 
-# 이번 런의 최종 선택 상태를 다음 비교용으로 저장
 st.session_state.prev_packets_sel = tuple(
-    st.session_state.get("packets_table", {}).get("selection", {}).get("rows", [])
+    st.session_state.get(packets_key, {}).get("selection", {}).get("rows", [])
 )
 st.session_state.prev_flows_sel = tuple(
-    st.session_state.get("flows_table", {}).get("selection", {}).get("rows", [])
+    st.session_state.get(flows_key, {}).get("selection", {}).get("rows", [])
 )
 
 with right:
-    st.markdown('<div class="section-title">📄 상세정보 </div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-title">📄 Detail</div>', unsafe_allow_html=True)
     if selected_rows:
         row = selected_df.iloc[selected_rows[0]]
         st.markdown(render_detail(row, kind=selected_kind), unsafe_allow_html=True)
