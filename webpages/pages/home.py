@@ -2,13 +2,12 @@ import sqlite3
 import pandas as pd
 import streamlit as st
 import plotly.express as px
-from datetime import datetime, timedelta
+from datetime import datetime, timezone, timedelta
+import time
 
 from streamlit_autorefresh import st_autorefresh
 
 from webpages.functions.titles  import get_h2
-
-from datetime import datetime, timezone, timedelta
 
 kst = timezone(timedelta(hours=9))
 
@@ -65,6 +64,44 @@ warnings_cnt = pd.read_sql_query("""
 SELECT count(*) as cnt
 FROM warnings
 """, conn)
+
+
+def check_new_warning():
+
+    latest_ts = warnings["last_timestamp"].iloc[0]  # 숫자 값 그대로 사용
+    now_ts = time.time()  # 현재 시각도 숫자(epoch)로
+
+    if "last_flashed_ts" not in st.session_state:
+        st.session_state.last_flashed_ts = None
+
+    is_new = (
+        (now_ts - latest_ts) < 1.5
+        and latest_ts != st.session_state.last_flashed_ts
+    )
+
+    if is_new:
+        st.session_state.last_flashed_ts = latest_ts
+
+        st.markdown("""
+        <style>
+        @keyframes flash-red-fade {
+            0%   { opacity: 0.55; }
+            100% { opacity: 0; }
+        }
+        .flash-overlay {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100vw; height: 100vh;
+            background-color: red;
+            pointer-events: none;
+            z-index: 999999;
+            animation: flash-red-fade 1.5s ease-out forwards;
+        }
+        </style>
+        <div class="flash-overlay"></div>
+        """, unsafe_allow_html=True)
+
+check_new_warning()
 
 ########################################################
 # KPI
