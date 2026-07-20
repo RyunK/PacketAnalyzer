@@ -4,6 +4,9 @@ from datetime import datetime, timedelta, timezone
 import pandas as pd
 import plotly.express as px
 import streamlit as st
+st.set_page_config(page_title="Packet Analyzer", layout="wide")
+
+
 from streamlit_autorefresh import st_autorefresh
 from webpages.css.st_alertbox import alret_box_style
 from webpages.css.st_header import _setting
@@ -28,7 +31,6 @@ from  webpages.css.st_metric import metric_cards
 from  webpages.css.st_alertbox import alret_box_style
 from  webpages.css.st_glass import liquid_glass
 
-st.set_page_config(page_title="Packet Analyzer", layout="wide")
 
 conn = sqlite3.connect("packets.db")
 _setting()
