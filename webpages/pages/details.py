@@ -361,7 +361,6 @@ def px_dark_palette(n: int) -> list[str]:
 
 
 def build_geo_figures(ok_df: pd.DataFrame):
-    """공인 IP(ok 상태)만으로 국가별 집계 + 코로플레스 지도 / 도넛 차트를 생성 (다크 테마)."""
     count_df = (
         ok_df.groupby(["country_code", "country_name", "latitude", "longitude"])
         .size()
@@ -377,12 +376,13 @@ def build_geo_figures(ok_df: pd.DataFrame):
             locationmode="ISO-3",
             z=count_df["count"],
             text=count_df["country_name"],
-            colorscale=[
-                [0.0, "#1e293b"],
-                [0.3, "#7f1d1d"],
-                [0.6, "#b91c1c"],
-                [1.0, "#ef4444"],
-            ],
+            colorscale = [
+    [0.0, "#22c55e"],  # 선명한 초록 (안정)
+    [0.3, "#eab308"],  # 따뜻한 노랑 (주의)
+    [0.6, "#f97316"],  # 주황 (경고)
+    [1.0, "#ef4444"]   # 기존 마감 레드 (위험)
+],
+
             marker_line_color="rgba(15,23,42,0.9)",
             marker_line_width=0.5,
             colorbar=dict(
@@ -454,7 +454,7 @@ def build_geo_figures(ok_df: pd.DataFrame):
         )
     )
     fig_pie.update_layout(
-        title=dict(text="Top Countries", font=dict(size=13, color="#e5e7eb")),
+        title=dict(text="국가별 순위", font=dict(size=15, color="#e5e7eb")),
         margin=dict(l=0, r=0, t=30, b=0),
         height=460,
         showlegend=True,
@@ -471,7 +471,7 @@ def build_geo_figures(ok_df: pd.DataFrame):
 # Header
 # ----------------------------------------------------------------------
 st.markdown("## 🛡️ 상세정보")
-st.caption("Real-Time Network Traffic Monitoring")
+
 
 try:
     packets_df = load_packets()
@@ -659,7 +659,7 @@ with left:
 
             flow_event = st.dataframe(
                 flow_view,
-                use_container_width=True,
+                width="stretch",
                 height=380,
                 hide_index=True,
                 on_select="rerun",
