@@ -19,8 +19,12 @@ import edge_tts
 
 kst = timezone(timedelta(hours=9))
 
-# 10초마다 자동으로 화면을 새로고침하여 최신 패킷 갱신
-st_autorefresh(interval=10 * 1000, key="home_refresh")
+# 1초마다 자동으로 화면을 새로고침하여 최신 패킷 갱신
+st_autorefresh(interval=1 * 1000, key="home_refresh")
+from  webpages.css.st_header import _setting
+from  webpages.css.st_metric import metric_cards
+from  webpages.css.st_alertbox import alret_box_style
+from  webpages.css.st_glass import liquid_glass
 
 st.set_page_config(page_title="Packet Analyzer", layout="wide")
 
@@ -185,6 +189,8 @@ def check_new_warning():
 
 
 
+metric_cards()
+liquid_glass()
 
 
 # 경고 탐지 로직 실행
@@ -210,36 +216,91 @@ with col5:
     st.metric("활성 IP", packets["src_ip"].nunique() if not packets.empty else 0)
 
 traffic = packets.copy()
-if not traffic.empty:
-    traffic["second"] = traffic["timestamp"].astype(int)
-    traffic["time"] = pd.to_datetime(traffic["second"], unit="s")
-    traffic = (
-        traffic.set_index("time").resample("1s").size().reset_index(name="Packets")
-    )
-    fig = px.line(traffic, x="time", y="Packets", markers=True)
-    fig.update_layout(height=200, margin=dict(l=20, r=20, t=20, b=20))
-    st.plotly_chart(fig, width="stretch")
+
+traffic["second"] = traffic["timestamp"].astype(int)
+
+traffic["time"] = pd.to_datetime(
+    traffic["second"],
+    unit="s"
+)
+
+traffic = (
+    traffic
+    .set_index("time")
+    .resample("1s")
+    .size()
+    .reset_index(name="Packets")
+)
+
+fig = px.line(
+    traffic,
+    x="time",
+    y="Packets",
+    markers=True
+)
+
+fig.update_traces(
+    line=dict(color="#4FC3F7", width=2.5),
+    marker=dict(size=5, color="#B3E5FC"),
+    fill="tozeroy",
+    fillcolor="rgba(79, 195, 247, 0.18)",
+)
+
+fig.update_layout(
+    height = 200,
+    margin=dict(l=20, r=20, t=20, b=20),
+    paper_bgcolor="rgba(0,0,0,0)",
+    plot_bgcolor="rgba(0,0,0,0)",
+)
+
+st.plotly_chart(fig, width='stretch')
 
 left, right = st.columns(2)
 with left:
     st.markdown(get_h2("프로토콜 비율"), unsafe_allow_html=True)
-    if not packets.empty:
-        proto = packets["protocol"].value_counts().reset_index()
-        proto.columns = ["Protocol", "Count"]
-        fig = px.bar(
-            proto,
-            x="Count",
-            y="Protocol",
-            orientation="h",
-            color="Protocol",
-            text="Count",
-        )
-        fig.update_traces(textposition="outside")
-        fig.update_layout(
-            xaxis_title="Packets", yaxis_title=None, height=200, showlegend=False
-        )
-        st.plotly_chart(fig, width="stretch")
 
+    proto = (
+        packets["protocol"]
+        .value_counts()
+        .reset_index()
+    )
+
+    proto.columns = ["Protocol", "Count"]
+
+
+    fig = px.bar(
+        proto,
+        x="Count",
+        y="Protocol",
+        orientation="h",
+        color="Protocol",
+        text="Count",
+        color_discrete_map={
+            "TCP": "#4A90E2",
+            "UDP": "#2EC4A5",
+            "OTHER": "#8B95A5"
+        }
+    )
+
+    # cliponaxis=False : 막대 끝 텍스트가 플롯 영역 밖으로 나가도 잘리지 않음
+    fig.update_traces(textposition="outside", cliponaxis=False)
+
+    # 막대가 가장 길 때도 숫자가 들어갈 자리가 생기도록 x축에 여유를 준다
+    if len(proto):
+        fig.update_xaxes(range=[0, proto["Count"].max() * 1.18])
+
+    fig.update_layout(
+        xaxis_title="Packets",
+        yaxis_title=None,
+        height=200,
+        showlegend=False,
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(0,0,0,0)",
+    )
+
+    st.plotly_chart(fig, width="stretch")
+
+  
 alret_box_style()
 with right:
     st.markdown(get_h2("최근 경고"), unsafe_allow_html=True)
