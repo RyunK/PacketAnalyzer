@@ -19,7 +19,7 @@ def metric_cards():
     transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
-
+.metric-card:hover,
 [data-testid="stMetric"]:hover {
     transform: translateY(-2px);
     box-shadow:
@@ -28,7 +28,7 @@ def metric_cards():
 }
 
 /* 제목(Label) */
-.metric-label
+.metric-label,
 [data-testid="stMetricLabel"] {
     font-size: 13px;
     font-weight: 600;
@@ -39,7 +39,7 @@ def metric_cards():
 }
 
 /* 숫자(Value) - 그라데이션 텍스트로 포인트 */
-.metric-value
+.metric-value,
 [data-testid="stMetricValue"] {
     font-size: 34px;
     font-weight: 800;
@@ -50,6 +50,7 @@ def metric_cards():
 }
 
 /* 변화량(Delta) - 알약 형태 뱃지처럼 */
+.metric-delta,
 [data-testid="stMetricDelta"] {
     font-size: 12px;
     font-weight: 700;

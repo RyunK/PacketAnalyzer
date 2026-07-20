@@ -4,12 +4,12 @@ import streamlit as st
 import plotly.express as px
 from datetime import datetime, timezone, timedelta
 import time
+kst = timezone(timedelta(hours=9))
 
 from streamlit_autorefresh import st_autorefresh
 
 from webpages.functions.titles  import get_h2
-
-kst = timezone(timedelta(hours=9))
+from webpages.functions.metric_html import  colored_metric
 
 from  webpages.css.st_header import _setting
 from  webpages.css.st_metric import metric_cards
@@ -73,7 +73,8 @@ FROM black_list
 blocked_cnt = pd.read_sql_query("""
 SELECT count(*) as cnt
 FROM blocked_packets
-""", conn)
+WHERE timestamp >= ?                                
+""", conn, params=(now - 60*60,))
 
 
 def check_new_warning():
@@ -138,30 +139,29 @@ engine_status = "Running" if packets["timestamp"].max() + 5 > now else "Stopped"
 
 col, col1, col2, col3 = st.columns(4)
 
+red = "#DC2626"
+green = "#10B981"
+
 # with st.container(key = "nowtime-metric"):
 with col:
-    st.metric(
-        "현재 시각",
-        datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-    )
+    colored_metric("현재 시각", datetime.now().strftime('%Y-%m-%d %H:%M:%S'), 'white')
+
+
 
 with col1:
-    st.metric(
-        "엔진 상태",
-        engine_status
-    )
+    color = ""
+    if engine_status == "Running":
+        color = green
+    else:
+        color = red
+    colored_metric("엔진 상태", engine_status, color)
 
 with col2:
-    st.metric(
-        "차단 IP 수",
-        blacklist_cnt['cnt']
-    )
+    colored_metric("차단 IP 수", blacklist_cnt['cnt'].iloc[0], red)
 
 with col3:
-    st.metric(
-        "1시간 이내 차단된 패킷 수",
-        blocked_cnt['cnt']
-    )
+    colored_metric("1시간 이내 차단된 패킷 수", blocked_cnt['cnt'].iloc[0], red)
+
 
 
 
@@ -187,10 +187,7 @@ with col3:
     )
 
 with col4:
-    st.metric(
-        "Warnings",
-        warnings_cnt['cnt']
-    )
+    colored_metric("Warnings", warnings_cnt['cnt'].iloc[0], red)
 
 with col5:
     st.metric(
