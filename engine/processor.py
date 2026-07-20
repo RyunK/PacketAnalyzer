@@ -111,8 +111,8 @@ class PacketProcessor:
                 if result:
                     try: 
                         # === 점수 계산하는 부분 ===
-                        calulator = ScoreCalculator()
-                        score = ScoreCalculator.calc_score()
+                        calulator = ScoreCalculator(self.db_module)
+                        score = calulator.calc_score(name, packet)
                         # === 점수 계산하는 부분 끝 ===
 
                         warning_manager.add_warning(
