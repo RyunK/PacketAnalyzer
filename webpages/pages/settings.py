@@ -10,9 +10,9 @@ from contextlib import closing
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_PATH = os.path.normpath(os.path.join(BASE_DIR, "..", "..", "packets.db"))
 
-BLACKLIST_TABLE = "black_list"         
-WHITELIST_TABLE = "white_list"        
-IP_COLUMN = "ip" 
+BLACKLIST_TABLE = "black_list"
+WHITELIST_TABLE = "white_list"
+IP_COLUMN = "ip"
 
 def is_valid_ip(ip: str) -> bool:
     try:
@@ -22,7 +22,6 @@ def is_valid_ip(ip: str) -> bool:
         return False
 
 
-
 def get_connection():
     conn = sqlite3.connect(DB_PATH, check_same_thread=False)
     conn.execute("PRAGMA busy_timeout = 5000")
@@ -30,8 +29,6 @@ def get_connection():
 
 @st.cache_resource
 def get_shared_connection():
-    # cache_resource ensures this only runs once per session instead of
-    # opening a new leaked connection on every Streamlit rerun
     conn = sqlite3.connect(DB_PATH, check_same_thread=False, isolation_level=None)
     conn.execute("PRAGMA busy_timeout = 5000")
     return conn
@@ -48,7 +45,7 @@ def search_ip(ip: str):
         df_bl = pd.read_sql_query(bl_query, conn, params=(ip,))
         df_wl = pd.read_sql_query(wl_query, conn, params=(ip,))
     return df_bl, df_wl
- 
+
 
 def add_to_blacklist(ip: str, accepted: bool = False):
     try:
@@ -81,32 +78,33 @@ def add_to_whitelist(ip: str, accepted: bool = False):
         return True, None
     except Exception as e:
         return False, str(e)
- 
- 
+
+
 def remove_from_blacklist(ip: str):
+    """차단 해제: black_list와 blocked_packets 테이블에서
+    해당 IP 기록을 실제로 삭제한다. (iptables는 아직 미구현이라 DB만 처리)"""
     try:
         conn = get_shared_connection()
-        conn.execute("UPDATE black_list SET accepted = 2 WHERE ip = ?", (ip,))
+        conn.execute("DELETE FROM black_list WHERE ip = ?", (ip,))
+        conn.execute("DELETE FROM blocked_packets WHERE src_ip = ?", (ip,))
         return True, None
     except Exception as e:
         return False, str(e)
- 
- 
+
+
 def remove_from_whitelist(ip: str):
     try:
         conn = get_shared_connection()
-        conn.execute("UPDATE white_list SET accepted = 2 WHERE ip = ?", (ip,))
+        conn.execute("DELETE FROM white_list WHERE ip = ?", (ip,))
         return True, None
     except Exception as e:
         return False, str(e)
- 
- 
-def fetch_all_ips(table: str, ip_column: str = "ip", exclude_accepted_2: bool = False) -> list:
+
+
+def fetch_all_ips(table: str, ip_column: str = "ip") -> list:
     with closing(get_connection()) as conn:
         try:
             query = f"SELECT {ip_column} FROM {table}"
-            if exclude_accepted_2:
-                query += " WHERE accepted != 2"
             df = pd.read_sql_query(query, conn)
             return df[ip_column].tolist()
         except Exception:
@@ -185,9 +183,9 @@ st.markdown(
     """,
     unsafe_allow_html=True,
 )
- 
+
 if "search_status" not in st.session_state:
-    st.session_state["search_status"] = None  # None | "black" | "white" | "both" | "not_found" | "empty"
+    st.session_state["search_status"] = None
 
 def do_search(ip_value: str):
     if not ip_value.strip():
@@ -243,8 +241,7 @@ elif status == "white":
     st.markdown('<div class="success-text">화이트리스트에 등록된 IP입니다.</div>', unsafe_allow_html=True)
 elif status == "both":
     st.markdown('<div class="error-text">블랙리스트와 화이트리스트에 모두 등록되어 있습니다.</div>', unsafe_allow_html=True)
- 
-# ---- Handle block / whitelist (work even without searching first) ----
+
 if block_clicked:
     if not ip_input.strip():
         st.markdown('<div class="error-text">차단할 IP를 입력해주세요.</div>', unsafe_allow_html=True)
@@ -256,7 +253,7 @@ if block_clicked:
             st.rerun()
         else:
             st.markdown(f'<div class="error-text">차단 실패: {err}</div>', unsafe_allow_html=True)
- 
+
 if whitelist_clicked:
     if not ip_input.strip():
         st.markdown('<div class="error-text">추가할 IP를 입력해주세요.</div>', unsafe_allow_html=True)
@@ -268,7 +265,7 @@ if whitelist_clicked:
             st.rerun()
         else:
             st.markdown(f'<div class="error-text">추가 실패: {err}</div>', unsafe_allow_html=True)
- 
+
 st.divider()
  
 # ---- Bottom: blacklist / whitelist columns ----
