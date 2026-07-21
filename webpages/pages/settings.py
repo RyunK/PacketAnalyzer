@@ -101,15 +101,24 @@ def remove_from_whitelist(ip: str):
         return False, str(e)
 
 
-def fetch_all_ips(table: str, ip_column: str = "ip") -> list:
+def fetch_all_ips(
+    table: str,
+    ip_column: str = "ip",
+    exclude_accepted_2: bool = False
+) -> list:
+
     with closing(get_connection()) as conn:
         try:
             query = f"SELECT {ip_column} FROM {table}"
+
+            if exclude_accepted_2:
+                query += " WHERE accepted != 2"
+
             df = pd.read_sql_query(query, conn)
             return df[ip_column].tolist()
+
         except Exception:
             return []
-
 
 GRADE_COLORS = {
     "Critical": "#d32f2f",
@@ -132,22 +141,33 @@ def score_to_grade(score: float) -> str:
     else:
         return "Critical"
  
- 
+def load_condition():
+    conn = get_connection()
+
+    row = conn.execute("""
+        SELECT grade, score
+        FROM blocked_conditions
+        LIMIT 1
+    """).fetchone()
+
+    conn.close()
+
+    return row
+
 def save_condition(grade: str, score: float):
-    """grade(PK) 기준으로 blocked_conditions에 upsert."""
     try:
         conn = get_connection()
-        conn.execute(
-            """
-            INSERT INTO blocked_conditions (grade, score)
-            VALUES (?, ?)
-            ON CONFLICT(grade) DO UPDATE SET score = excluded.score
-            """,
-            (grade, score),
-        )
+
+        conn.execute("""
+            UPDATE blocked_conditions
+            SET grade = ?, score = ?
+        """, (grade, score))
+
         conn.commit()
         conn.close()
+
         return True, None
+
     except Exception as e:
         return False, str(e)
 # -----------------------------
@@ -288,7 +308,7 @@ with left:
                 key=f"bl_table_{len(bl_ips)}",
             )
             bl_selected_rows = bl_event.selection.rows if bl_event and bl_event.selection else []
-            bl_selected_ips = [bl_ips[i] for i in bl_selected_rows]
+            bl_selected_ips = [bl_ips[i] for i in bl_selected_rows if 0 <= i < len(bl_ips)]
     
             if st.button(
                 f"차단 해제 ({len(bl_selected_ips)}개)" if bl_selected_ips else "차단 해제",
@@ -319,10 +339,10 @@ with left:
                 hide_index=True,
                 on_select="rerun",
                 selection_mode="multi-row",
-                key=f"wl_table_{len(bl_ips)}",
+                key=f"wl_table_{len(wl_ips)}",
             )
             wl_selected_rows = wl_event.selection.rows if wl_event and wl_event.selection else []
-            wl_selected_ips = [wl_ips[i] for i in wl_selected_rows]
+            wl_selected_ips = [wl_ips[i] for i in wl_selected_rows if 0 <= i < len(wl_ips)]
     
             if st.button(
                 f"해제 ({len(wl_selected_ips)}개)" if wl_selected_ips else "해제",
@@ -346,7 +366,13 @@ with left:
 with right:
     st.title("🔐자동차단조건")
     if "score_value" not in st.session_state:
-        st.session_state.score_value = 5.0
+        row = load_condition()
+
+        if row:
+            _, score = row
+            st.session_state.score_value = score
+        else:
+            st.session_state.score_value = 5.0
     
     grade = score_to_grade(st.session_state.score_value)
     color = GRADE_COLORS[grade]
@@ -365,11 +391,22 @@ with right:
     )
     
     if st.button("저장", width="stretch"):
-        ok, err = save_condition(grade, st.session_state.score_value)
+        ok, err = save_condition(
+            score_to_grade(st.session_state.score_value),
+            st.session_state.score_value,
+        )
+
         if ok:
-            st.success(f"저장 완료: grade={grade}, score={st.session_state.score_value}")
+            st.session_state["save_success"] = True
+
+            if "score_value" in st.session_state:
+                del st.session_state["score_value"]
+
+            st.rerun()
         else:
-            st.session_state["_error"] = err
+            st.error(err)
+    if st.session_state.pop("save_success", False):
+        st.success("저장되었습니다.")
     
     # 핸들(및 값 말풍선) 색상을 현재 등급 색으로 지정
     st.markdown(
@@ -380,7 +417,6 @@ with right:
         border-color: {color} !important;
         box-shadow: 0 0 0 4px {color}33 !important;
     }}
-    /* [수정] 상단 숫자 배경 제거, 테두리 제거, 크기 확대, 위치 조정 */
     .st-key-score_slider div[data-testid="stSliderThumbValue"] {{
         background-color: transparent !important;
         border: none !important;
