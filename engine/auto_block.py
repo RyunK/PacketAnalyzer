@@ -22,7 +22,7 @@ class AutoBlock:
         """
         자동 차단
         """
-        threshold = self.get_threshold()
+        threshold = self.get_threshold().lower()
         if score >= self.th_dict[threshold]:
             add_black(src_ip)
             self.db.insert_black_list(src_ip, True)

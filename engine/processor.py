@@ -1,5 +1,8 @@
 from queue import Queue
 from scapy.layers.inet import IP, TCP, UDP
+import time
+import traceback
+
 from .packet_data import PacketData
 from .flow_manager import FlowManager
 from .score_calculator import ScoreCalculator
@@ -9,8 +12,6 @@ from .detector_loader import load_detectors
 from .warning_manager import WarningManager
 from .db.dbmodule import DBModule
 from engine.iptables import _rule_exists
-
-import time
 
 
 
@@ -107,7 +108,7 @@ class PacketProcessor:
                     packet.src_port, packet.dst_port, packet.protocol, 
                     packet.packet_size, packet.payload_size, packet.tcp_flags)
             except Exception as e :
-                print(e)
+                traceback.print_exc()
             
             if _rule_exists(packet.src_ip, "ACCEPT"):
                 continue
@@ -136,9 +137,9 @@ class PacketProcessor:
 
                         # score대로 차단하는 코드
                         auto_blocker = AutoBlock(self.db_module)
-                        
+                        auto_blocker.auto_block(score, packet.src_ip)
                     except Exception as e :
-                        print(e)
+                        traceback.print_exc()
 
                 if time.time() - last_flush >= 1:
                     warning_manager.flush(self.db_module)
