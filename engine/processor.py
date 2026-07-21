@@ -3,6 +3,7 @@ from scapy.layers.inet import IP, TCP, UDP
 from .packet_data import PacketData
 from .flow_manager import FlowManager
 from .score_calculator import ScoreCalculator
+from .auto_block import AutoBlock
 
 from .detector_loader import load_detectors
 from .warning_manager import WarningManager
@@ -134,6 +135,8 @@ class PacketProcessor:
                         )
 
                         # score대로 차단하는 코드
+                        auto_blocker = AutoBlock(self.db_module)
+                        
                     except Exception as e :
                         print(e)
 
