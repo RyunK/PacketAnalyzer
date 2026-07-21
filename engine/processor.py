@@ -1,15 +1,17 @@
 from queue import Queue
 from scapy.layers.inet import IP, TCP, UDP
-from .packet_data import PacketData
+import time
+import traceback
 
+from .packet_data import PacketData
 from .flow_manager import FlowManager
+from .score_calculator import ScoreCalculator
+from .auto_block import AutoBlock
 
 from .detector_loader import load_detectors
 from .warning_manager import WarningManager
 from .db.dbmodule import DBModule
 from engine.iptables import _rule_exists
-
-import time
 
 
 
@@ -106,10 +108,7 @@ class PacketProcessor:
                     packet.src_port, packet.dst_port, packet.protocol, 
                     packet.packet_size, packet.payload_size, packet.tcp_flags)
             except Exception as e :
-                print(e)
-            
-            if _rule_exists(packet.src_ip, "ACCEPT"):
-                continue
+                traceback.print_exc()
 
             for detect in self.detectors:
                 raw_result = detect(context.packet, context.flow)
@@ -124,10 +123,23 @@ class PacketProcessor:
                         warning_manager.add_warning(
                             packet.timestamp,
                             packet.src_ip,
-                            name
+                            name,
+                            score
                         )
+                        
+                        if _rule_exists(packet.src_ip, "ACCEPT"):
+                            continue
+
+                        # === 점수 계산하는 부분 ===
+                        calulator = ScoreCalculator(self.db_module)
+                        score = calulator.calc_score(name, packet)
+                        # === 점수 계산하는 부분 끝 ===
+
+                        # score대로 차단하는 코드
+                        auto_blocker = AutoBlock(self.db_module)
+                        auto_blocker.auto_block(score, packet.src_ip)
                     except Exception as e :
-                        print(e)
+                        traceback.print_exc()
 
                 if time.time() - last_flush >= 1:
                     warning_manager.flush(self.db_module)
