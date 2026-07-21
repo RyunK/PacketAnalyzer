@@ -1,15 +1,14 @@
+from engine.iptables import add_black
 
 class AutoBlock:
-    def __init__(self):
+    def __init__(self, db):
         self.th_dict = {
             "low": 0.1,
-            "medium": 7,
-            "high": 9,
-            "critical": 10.1,
+            "medium": 4,
+            "high": 7,
+            "critical": 9,
         }
-
-    # 어디서부터 막을지 가져오기
-    # 점수가 데이터 이상이면 iptables 차단하고 블랙리스트에 넣기
+        self.db = db
 
     def get_threshold(self):
         """
@@ -23,6 +22,7 @@ class AutoBlock:
         """
         자동 차단
         """
-        threshold = self.get_threshold()
-
-        
+        threshold = self.get_threshold().lower()
+        if score >= self.th_dict[threshold]:
+            add_black(src_ip)
+            self.db.insert_black_list(src_ip, True)
