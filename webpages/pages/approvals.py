@@ -6,8 +6,8 @@ st.set_page_config(
     layout="wide"  # "centered"에서 "wide"로 변경하여 화면 가득 채움
 )
 
-from accountdb import get_db, log_action
-from accountdb import get_pending_role_requests, resolve_role_request
+from webpages.login.accountdb import get_db, log_action
+from webpages.login.accountdb import get_pending_role_requests, resolve_role_request
 
 st.title("🔔 회원가입 및 권한 관리")
 

@@ -4,11 +4,10 @@ index.py는 이 모듈의 require_login()만 호출해서 로그인 게이트를
 """
 
 import re
-
 import streamlit as st
 from werkzeug.security import generate_password_hash, check_password_hash
 
-from accountdb import (
+from webpages.login.accountdb import (
     get_db,
     create_session,
     get_user_by_session,
