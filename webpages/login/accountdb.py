@@ -1,9 +1,11 @@
 import hashlib
 import secrets
 import sqlite3
+import os
 from datetime import datetime, timedelta
 
-DB_PATH = "account.db"
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))  
+DB_PATH = os.path.normpath(os.path.join(BASE_DIR, "..","..", "account.db"))
 
 SESSION_TTL_DAYS = 7        # 세션 토큰 유효 기간
 MAX_FAILED_ATTEMPTS = 7     # 로그인 실패 허용 횟수

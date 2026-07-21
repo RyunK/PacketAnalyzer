@@ -1,6 +1,6 @@
 import streamlit as st
 
-from accountdb import get_audit_log
+from webpages.login.accountdb import get_audit_log
 
 st.title("📜 감사 로그")
 

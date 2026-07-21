@@ -1,7 +1,7 @@
 import streamlit as st
 
-from accountdb import init_db, get_unread_notification_count
-from auth import require_login, logout
+from webpages.login.accountdb import init_db, get_unread_notification_count
+from webpages.login.auth import require_login, logout
 
 st.set_page_config(page_title="Login", page_icon="🔐", layout="wide")
 

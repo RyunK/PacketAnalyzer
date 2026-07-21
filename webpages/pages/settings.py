@@ -167,7 +167,7 @@ def do_search(ip_value: str):
 
 # ---- Top row: search icon | IP input | block button | whitelist button ----
 outer_search_col, outer_action_col = st.columns([4, 2.7])
- 
+
 with st.form(key="search_form", clear_on_submit=False, border=False):
     col_input, col_search, col_block, col_white = st.columns([3, 0.7, 1.1, 1.6])
     

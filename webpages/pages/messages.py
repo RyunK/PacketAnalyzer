@@ -1,7 +1,7 @@
 import streamlit as st
 from streamlit_autorefresh import st_autorefresh
 
-from accountdb import get_db
+from webpages.login.accountdb import get_db
 
 st.title("💬 메시지")
 

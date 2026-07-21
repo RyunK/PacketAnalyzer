@@ -1,6 +1,6 @@
 import streamlit as st
 
-from accountdb import create_role_request, get_my_role_requests
+from webpages.login.accountdb import create_role_request, get_my_role_requests
 
 st.title("🙋 권한 변경 요청")
 
