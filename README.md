@@ -20,8 +20,21 @@ Packet Analyzer는 실시간으로 네트워크 패킷을 수집하고 다양한
 pip install -r requirements.txt
 ```
 
-## 2. Discord 봇 설정
+## 2. Discord 봇 및 .env 설정
 
+`.env` 파일 설정이 필요합니다.
+
+[디스코드 개발자 포탈](https://discord.com/developers/)에 접속하여 디스코드 봇을 생성합니다. 
+
+
+```
+DISCORD_TOKEN = YOUR_BOT_INSTALL_LINK
+auth_id = YOUR_DISCORD_USER_ID_1, YOUR_DISCORD_USER_ID_2, ...
+```
+
++ `DISCORD_TOKEN`: **애플리케이션 - 설치 - 설치 링크**를 복사하여 저장합니다.
++ `auth_id`: Discord에서 개발자 모드를 키고 **사용자 프로필 클릭 - 사용자 ID 복사**하여 저장합니다.
+   + 여러개의 계정에 전송하고자 할 경우, **컴마(,)**로 구분합니다.
 
 ## 3. Engine 실행
 
