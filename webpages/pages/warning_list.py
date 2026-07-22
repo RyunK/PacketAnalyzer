@@ -7,13 +7,16 @@ import altair as alt
 import pandas as pd
 import streamlit as st
 
-st.set_page_config(layout="wide", page_title="네트워크 공격 탐지 대시보드")
+st.set_page_config(
+    page_title="Warning Analysis",
+    page_icon="⚠️",
+    layout="wide",
+)
 
 from webpages.css.st_header import _setting
-from webpages.css.st_glass import liquid_glass
 
 _setting()
-liquid_glass()
+
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_PATH = os.path.normpath(os.path.join(BASE_DIR, "..", "..", "packets.db"))
@@ -217,12 +220,7 @@ def confirm_block_dialog(row):
     if st.session_state.get("block_error"):
         st.error(st.session_state.block_error)
 
-st.markdown(
-    """
-<h1 style="font-size:28px; margin:0;">경고 목록</h1>
-""",
-    unsafe_allow_html=True,
-)
+st.markdown("""<h1 style="font-size:28px; margin:0;">⚠️ Warning Analysis</h1>""", unsafe_allow_html=True)
 
 refresh_count = None
 try:

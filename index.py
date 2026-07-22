@@ -2,11 +2,13 @@ import streamlit as st
 
 from webpages.login.accountdb import init_db, get_unread_notification_count
 from webpages.login.auth import require_login, logout
+from webpages.css.st_glass import liquid_glass
 
-st.set_page_config(page_title="Login", page_icon="🔐", layout="wide")
+st.set_page_config(page_title="Login", layout="wide")
 
 init_db()
 
+liquid_glass()
 # 로그인 게이트: 로그인 안 됐으면 여기서 폼을 그리고 멈춤
 require_login()
 
@@ -28,7 +30,7 @@ pages = [
     st.Page('webpages/pages/home.py', title='🏠 Home'),
     st.Page('webpages/pages/warning_list.py', title='⚠️ warnings'),
     st.Page('webpages/pages/details.py', title='📋 Details'),
-    st.Page('webpages/pages/messages.py', title='💬 메시지'),
+    st.Page('webpages/pages/Messenger.py', title='💬 Messenger'),
 ]
 
 # 일반 유저에게는 권한 요청 페이지 노출
@@ -43,20 +45,20 @@ if me["role"] == "admin":
     total_pending = signup_pending + role_pending
 
     if total_pending > 0:
-        signup_label = f"🔔 가입 및 권한 승인 ({total_pending})"
+        signup_label = f"🔔 Access Requests ({total_pending})"
         role_label = f"🛡️ 권한 요청 ({total_pending})"
     else:
         signup_label = "🔔 가입 승인 관리"
         role_label = "권한 요청 관리"
 
-    pages.append(st.Page('webpages/pages/approvals.py', title=signup_label))
+    pages.append(st.Page('webpages/pages/access_requests.py', title=signup_label))
 
     
     security_pending = get_unread_notification_count("security_alert")
-    security_label = f"🚨 보안 알림 ({security_pending})" if security_pending else "보안 알림"
+    security_label = f"🚨 Security Alerts ({security_pending})" if security_pending else "보안 알림"
     pages.append(st.Page('webpages/pages/security_alerts.py', title=security_label))
-    pages.append(st.Page('webpages/pages/settings.py', title='⚙️ Settings'))
-    pages.append(st.Page('webpages/pages/audit_log.py', title='📜 감사 로그'))
+    pages.append(st.Page('webpages/pages/settings.py', title='🚫 Block Management'))
+    pages.append(st.Page('webpages/pages/audit_logs.py', title='📜 Audit Logs'))
 
 pg = st.navigation(pages)
 pg.run()

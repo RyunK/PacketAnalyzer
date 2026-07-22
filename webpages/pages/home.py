@@ -8,7 +8,12 @@ from datetime import datetime, timedelta, timezone
 import pandas as pd
 import plotly.express as px
 import streamlit as st
-st.set_page_config(page_title="Packet Analyzer", layout="wide")
+
+st.set_page_config(
+    page_title="Real-Time Packet Monitor",
+    page_icon="🖥️",
+    layout="wide",
+)
 
 
 from streamlit_autorefresh import st_autorefresh
@@ -39,12 +44,7 @@ from  webpages.css.st_glass import liquid_glass
 conn = sqlite3.connect("packets.db")
 _setting()
 
-st.markdown(
-    """
-<h1 style="font-size:28px; margin:0;">Home</h1>
-""",
-    unsafe_allow_html=True,
-)
+st.markdown("""<h1 style="font-size:28px; margin:0;">🖥️ Real-Time Packet Monitor</h1>""", unsafe_allow_html=True)
 
 ########################################################
 # 최근 60초 데이터 및 경고 데이터 가져오기

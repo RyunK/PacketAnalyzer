@@ -10,19 +10,18 @@ from babel import Locale
 from zoneinfo import ZoneInfo
 from webpages.functions.titles  import get_h2
 from webpages.css.st_header import _setting
-from webpages.css.st_glass import liquid_glass
+
 
 # ----------------------------------------------------------------------
 # 기본 설정
 # ----------------------------------------------------------------------
 st.set_page_config(
-    page_title="Packet Analyzer Dashboard",
+    page_title="Network Traffic Monitoring Center",
     page_icon="🛡️",
     layout="wide",
 )
 
 _setting()
-liquid_glass()
 
 PROTOCOL_COLORS = {
     "TCP": {"bg": "rgba(59, 130, 246, 0.18)", "fg": "#8AB4FF", "accent": "#2f5bff"},
@@ -691,15 +690,7 @@ def build_geo_figures(ok_df: pd.DataFrame):
 # ----------------------------------------------------------------------
 # Header
 # ----------------------------------------------------------------------
-st.markdown(
-    """
-    <div style="display:flex; align-items:center; gap:10px; margin-bottom:15px;">
-        <span style="font-size:26px;">🛡️</span>
-        <span style="font-size:26px; font-weight:800; font-family:'Inter', sans-serif; color:#f8fafc; letter-spacing:-0.3px;">상세정보</span>
-    </div>
-    """,
-    unsafe_allow_html=True,
-)
+st.markdown("""<h1 style="font-size:28px; margin:0;">🛡️ Network Traffic Monitoring Center</h1>""", unsafe_allow_html=True)
 
 if "view_mode" not in st.session_state:
     st.session_state.view_mode = "all"  # "all" | "blocked"

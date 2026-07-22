@@ -1,4 +1,5 @@
 import streamlit as st
+import streamlit.components.v1 as components
 import sqlite3
 import pandas as pd
 import os
@@ -173,22 +174,17 @@ def save_condition(grade: str, score: float):
 # -----------------------------
 # UI
 # -----------------------------
-st.set_page_config(page_title="IP Search", layout="wide")
+st.set_page_config(
+    page_title="Block Management",
+    page_icon="🚫",
+    layout="wide",
+)
 
 from webpages.css.st_header import _setting
-from webpages.css.st_glass import liquid_glass
 
 _setting()
-liquid_glass()
 
-st.markdown("""
-<h1 style="
-    font-size:28px;
-    margin:0;
-">
-Settings
-</h1>
-""", unsafe_allow_html=True)
+st.markdown("""<h1 style="font-size:28px; margin:0;">🚫 Block Management</h1>""", unsafe_allow_html=True)
 
 st.markdown(
     """
@@ -224,7 +220,7 @@ def do_search(ip_value: str):
         st.session_state["search_status"] = "not_found"
 
 # ---- Top row: search icon | IP input | block button | whitelist button ----
-outer_search_col, outer_action_col = st.columns([3.5, 3.2])
+outer_search_col, outer_action_col = st.columns(2)
 
 # outer_search_col 내부에 검색 폼을 배치하여 우측 등급 확인 영역과 완전히 분리
 with outer_search_col:
@@ -289,7 +285,7 @@ if whitelist_clicked:
 st.divider()
  
 # ---- Bottom: blacklist / whitelist columns ----
-left, right = st.columns(2)
+left, spacer, right = st.columns([1, 0.08, 1])
 
  
 with left:
@@ -364,6 +360,9 @@ with left:
 
 
 with right:
+    # 왼쪽 블랙리스트/화이트리스트 영역과 살짝 여백을 두기 위한 간격
+    st.markdown("<div style='height:14px;'></div>", unsafe_allow_html=True)
+
     st.markdown(
         """
     <h1 style="font-size:28px; margin:0;">🔐자동차단조건</h1>
@@ -382,21 +381,30 @@ with right:
     
     grade = score_to_grade(st.session_state.score_value)
     color = GRADE_COLORS[grade]
-    
+    fill_pct = st.session_state.score_value * 10  # 0~10 → 0~100%
+
     with st.container(key="score_slider"):
         st.slider(
             "score", min_value=0.0, max_value=10.0, step=0.1,
             key="score_value", label_visibility="collapsed",
         )
     
-    # 슬라이더 중앙 하단에 등급 텍스트 표시
+    # 등급 텍스트: 초기 렌더용 placeholder. 실제 위치는 아래 JS가
+    # 이 요소를 핸들(thumb)의 자식으로 옮겨 붙여서, 숫자 말풍선처럼
+    # 핸들에 완전히 밀착된 채로 함께 움직이게 만든다.
     st.markdown(
-        f"<div style='text-align:center;font-weight:700;font-size:1.1rem;"
-        f"color:{color};margin-top:0.6rem;'>{grade}</div>",
+        f"<div class='score-grade-text' style='font-weight:700; font-size:1.1rem; "
+        f"color:{color}; white-space:nowrap;'>{grade}</div>",
         unsafe_allow_html=True,
     )
-    
-    if st.button("저장", width="stretch"):
+
+    # 저장 버튼: 글자 수에 맞춰 폭을 줄이고, 우측 정렬한다.
+    left_space, right_btn = st.columns([5, 1])
+
+    with right_btn:
+        st.button("저장", key="save_btn", use_container_width=True)
+
+    if st.session_state.get("save_btn"):
         ok, err = save_condition(
             score_to_grade(st.session_state.score_value),
             st.session_state.score_value,
@@ -414,15 +422,40 @@ with right:
     if st.session_state.pop("save_success", False):
         st.success("저장되었습니다.")
     
-    # 핸들(및 값 말풍선) 색상을 현재 등급 색으로 지정
+    # 슬라이더(핸들/트랙/값 말풍선) 색상을 현재 등급 색으로 지정.
+    # Streamlit 1.60 슬라이더는 react-aria 기반이라 핸들에 role="slider"가 없고
+    # 핸들/트랙에 testid도 없어서 emotion 타깃 클래스(e23vpic*)로 잡는다.
+    # (스트림릿 업그레이드로 클래스명이 바뀌면 색만 기본값으로 돌아가고 동작에는 지장 없음)
     st.markdown(
         f"""
     <style>
-    .st-key-score_slider div[role="slider"] {{
-        background-color: {color} !important;
-        border-color: {color} !important;
-        box-shadow: 0 0 0 4px {color}33 !important;
+    .st-key-score_slider {{
+        position: relative !important;
     }}
+    /* 핸들: 평상시엔 iOS 스타일 흰색 알약 (드래그 중 색상은 JS가 입힘) */
+    .st-key-score_slider [data-testid="stSlider"] [class*="e23vpic3"] {{
+        width:40px !important;
+        height:24px !important;
+        position:relative !important;
+        top:10px !important;
+        border-radius: 999px !important;
+        background-color: #FFFFFF !important;
+        box-shadow:
+            0 1px 3px rgba(0, 0, 0, 0.35),
+            0 4px 10px rgba(0, 0, 0, 0.20) !important;
+        position: relative !important;
+        overflow: visible !important;
+    }}
+    /* 트랙: 채워진 구간을 등급 색으로 다시 그린다 */
+    .st-key-score_slider [data-testid="stSlider"] [class*="e23vpic5"] {{
+        background: linear-gradient(
+            to right,
+            {color} 0%,
+            {color} {fill_pct:.1f}%,
+            rgba(151, 166, 195, 0.25) {fill_pct:.1f}%,
+            rgba(151, 166, 195, 0.25) 100%) !important;
+    }}
+    /* 값 말풍선 */
     .st-key-score_slider div[data-testid="stSliderThumbValue"] {{
         background-color: transparent !important;
         border: none !important;
@@ -431,13 +464,139 @@ with right:
         font-weight: 700 !important;
         top: -35px !important;
     }}
+    /* 등급 텍스트: 핸들의 자식으로 옮겨진 뒤, 핸들 바로 아래에 딱 붙는다 */
+    .score-grade-text {{
+        position: absolute !important;
+        top: 28px !important;
+        left: 50% !important;
+        transform: translateX(-50%) !important;
+        pointer-events: none !important;
+    }}
+    /* 저장 버튼: 글자 수만큼만 폭을 차지하고, 컨테이너 안에서 오른쪽으로 정렬 */
+    .st-key-save_btn_wrap {{
+        display: flex !important;
+        justify-content: flex-end !important;
+    }}
+    .st-key-save_btn_wrap [data-testid="stButton"] {{
+        margin-left: auto !important;
+        width: fit-content !important;
+    }}
+    .st-key-save_btn_wrap button {{
+        width: auto !important;
+        padding-left: 22px !important;
+        padding-right: 22px !important;
+    }}
     </style>
     """,
         unsafe_allow_html=True,
+    )
+
+    # iOS 리퀴드 글라스 핸들: 드래그하는 동안 핸들 위에 반투명 유리 렌즈가
+    # 스프링 애니메이션으로 부풀어 오르고, 놓으면 원래대로 줄어든다.
+    # (.glass-dragging 클래스는 아래 components.html JS가 토글)
+    st.markdown(
+        """
+    <style>
+    .st-key-score_slider [class*="e23vpic3"]::after {
+        content: "";
+        position: absolute;
+        inset: -4px -8px;  /* 흰 알약(40x24)과 기존 렌즈(72x42)의 중간 크기(56x32) */
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.12);
+        backdrop-filter: blur(3px) saturate(180%) brightness(1.1);
+        -webkit-backdrop-filter: blur(3px) saturate(180%) brightness(1.1);
+        border: 1px solid rgba(255, 255, 255, 0.45);
+        box-shadow:
+            0 6px 18px rgba(0, 0, 0, 0.25),
+            inset 0 1px 0 rgba(255, 255, 255, 0.55),
+            inset 0 -1px 0 rgba(255, 255, 255, 0.15);
+        opacity: 0;
+        transform: scale(0.55);
+        transition:
+            opacity 0.15s ease,
+            transform 0.3s cubic-bezier(0.2, 1.6, 0.4, 1);
+        pointer-events: none;
+    }
+    .st-key-score_slider.glass-dragging [class*="e23vpic3"]::after {
+        opacity: 1;
+        transform: scale(1);
+    }
+    /* 드래그 중에는 안쪽 알약을 숨기고 트랙 선과 유리 렌즈만 보이게 */
+    .st-key-score_slider.glass-dragging [class*="e23vpic3"] {
+        background-color: transparent !important;
+        box-shadow: none !important;
+    }
+    </style>
+    """,
+        unsafe_allow_html=True,
+    )
+
+    # 드래그 중에는 Streamlit rerun이 없어서 CSS만으로는 색/텍스트가 실시간으로 못 바뀐다.
+    # 핵심 변경: 등급 라벨(.score-grade-text)을 컨테이너 기준 left:% 로 흉내내는 대신,
+    # 핸들(thumb) DOM의 자식으로 실제로 옮겨 붙인다. 이렇게 하면 값 말풍선처럼
+    # 핸들과 완전히 같은 좌표계에서 움직여서, 슬라이더 안쪽 여백/폭 계산 오차 없이
+    # 항상 핸들에 딱 붙어서 함께 이동한다.
+    components.html(
+        """
+        <script>
+        (function () {
+            const doc = window.parent.document;
+            const gradeOf = (v) =>
+                v <= 0 ? ["None", "#1976d2"]
+                : v < 4 ? ["Low", "#43a047"]
+                : v < 7 ? ["Medium", "#fbc02d"]
+                : v < 9 ? ["High", "#f57c00"]
+                : ["Critical", "#d32f2f"];
+
+            function hook() {
+                const root = doc.querySelector(".st-key-score_slider");
+                const input = root && root.querySelector('input[type="range"]');
+                const thumb = root && root.querySelector('[class*="e23vpic3"]');
+                const track = root && root.querySelector('[class*="e23vpic5"]');
+                const label = doc.querySelector(".score-grade-text");
+                if (!input || !thumb || !track || !label) { setTimeout(hook, 200); return; }
+                const bubble = root.querySelector('[data-testid="stSliderThumbValue"]');
+
+                // 등급 라벨을 핸들의 자식으로 한 번만 옮겨 붙인다.
+                // (부모가 바뀌어도 CSS의 position:absolute; top:28px; left:50% 는 그대로 적용됨)
+                if (label.parentElement !== thumb) {
+                    thumb.appendChild(label);
+                }
+
+                const apply = () => {
+                    const v = parseFloat(input.value);
+                    if (isNaN(v)) return;
+                    const [name, c] = gradeOf(v);
+                    const pct = v * 10;
+                    track.style.setProperty("background",
+                        `linear-gradient(to right, ${c} 0%, ${c} ${pct}%, ` +
+                        `rgba(151,166,195,0.25) ${pct}%, rgba(151,166,195,0.25) 100%)`,
+                        "important");
+                    if (bubble) bubble.style.setProperty("color", c, "important");
+                    label.textContent = name;
+                    label.style.setProperty("color", c, "important");
+                };
+
+                new MutationObserver(apply).observe(input, { attributes: true });
+                input.addEventListener("input", apply);
+
+                const stopDrag = () => { root.classList.remove("glass-dragging"); apply(); };
+                root.addEventListener("pointerdown", () => {
+                    root.classList.add("glass-dragging");
+                    apply();
+                });
+                doc.addEventListener("pointerup", stopDrag);
+                doc.addEventListener("pointercancel", stopDrag);
+
+                apply();
+            }
+            hook();
+        })();
+        </script>
+        """,
+        height=0,
     )
     
     if st.session_state.get("_error"):
         st.error(f"DB 저장 실패: {st.session_state['_error']}")
         del st.session_state["_error"]
-
-        

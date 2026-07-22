@@ -7,12 +7,14 @@ _setting()
 
 
 # st.title("📜 감사 로그")
-st.markdown(
-        """
-    <h1 style="font-size:28px; margin:0;">📜 감사 로그</h1>
-    """,
-        unsafe_allow_html=True,
-    )
+st.set_page_config(
+    page_title="Audit Logs",
+    page_icon="📜",
+    layout="wide",
+)
+
+st.markdown("""<h1 style="font-size:28px; margin:0;">📜 Audit Logs</h1>""", unsafe_allow_html=True)
+
 
 if not st.session_state.get("logged_in") or st.session_state.user["role"] != "admin":
     st.error("관리자만 접근할 수 있습니다.")
