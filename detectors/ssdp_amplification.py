@@ -13,10 +13,13 @@ def detect(packet: PacketData, flow: Flow):
         return (False, "")
 
     result = detector.add_packet(packet)
+    avg_byte = result.total_bytes / result.packet_count
 
     if (
         result.packet_count >= 80
         or result.total_bytes >= 2_000_000
+    ) and (
+        avg_byte >= 600
     ):
 
         print("\n[SSDP Amplification 의심됨]")
