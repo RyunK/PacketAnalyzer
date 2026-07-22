@@ -15,7 +15,7 @@ from webpages.login.accountdb import (
     get_db,
     create_session,
     get_user_by_session,
-    delete_session,
+    delete_all_sessions_for_user,
     add_notification,
     is_locked_out,
     record_failed_login,
@@ -203,7 +203,7 @@ def logout():
             actor_user_id=st.session_state.user["id"],
             actor_email=st.session_state.user["email"],
         )
-    delete_session(st.query_params.get("token"))
+        delete_all_sessions_for_user(st.session_state.user["id"])   # ← 이 줄로 교체
     st.session_state.logged_in = False
     st.session_state.user = None
     st.session_state.mode = "login"

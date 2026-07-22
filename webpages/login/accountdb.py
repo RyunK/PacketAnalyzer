@@ -290,11 +290,9 @@ def get_user_by_session(raw_token: str):
     }
  
  
-def delete_session(raw_token: str):
-    if not raw_token:
-        return
+def delete_all_sessions_for_user(user_id: int):
     conn = get_db()
-    conn.execute("DELETE FROM sessions WHERE token_hash = ?", (_hash_token(raw_token),))
+    conn.execute("DELETE FROM sessions WHERE user_id = ?", (user_id,))
     conn.commit()
     conn.close()
  
