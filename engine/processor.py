@@ -133,7 +133,7 @@ class PacketProcessor:
                         )
                         
                         # if _rule_exists(packet.src_ip, "ACCEPT"):
-                        if self.db_module.isit_white_fromdb(packet.src_ip, "ACCEPT"):
+                        if self.db_module.isit_white_fromdb(packet.src_ip):
                             continue
 
 
