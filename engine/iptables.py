@@ -96,7 +96,7 @@ def is_blocked(src_ip, chain="INPUT"):
     """
     IP만 가지고 순서대로 규칙을 검사.
     첫 번째로 매치되는 규칙의 target을 기준으로 판단.
-    매치되는 규칙이 없으면 chain의 기본 정책(policy)을 따름.
+    매치되는 규칙이 없으면 일단 통과시킴.
     """
     rules, default_policy = get_ordered_rules(chain)
 
