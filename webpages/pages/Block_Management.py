@@ -86,8 +86,9 @@ def remove_from_blacklist(ip: str):
     해당 IP 기록을 실제로 삭제한다. (iptables는 아직 미구현이라 DB만 처리)"""
     try:
         conn = get_shared_connection()
-        conn.execute("DELETE FROM black_list WHERE ip = ?", (ip,))
-        conn.execute("DELETE FROM blocked_packets WHERE src_ip = ?", (ip,))
+        # conn.execute("DELETE FROM black_list WHERE ip = ?", (ip,))
+        # conn.execute("DELETE FROM blocked_packets WHERE src_ip = ?", (ip,))
+        conn.execute("UPDATE black_list SET accepted = 2  WHERE src_ip = ?", (ip,))
         return True, None
     except Exception as e:
         return False, str(e)
@@ -96,7 +97,8 @@ def remove_from_blacklist(ip: str):
 def remove_from_whitelist(ip: str):
     try:
         conn = get_shared_connection()
-        conn.execute("DELETE FROM white_list WHERE ip = ?", (ip,))
+        # conn.execute("DELETE FROM white_list WHERE ip = ?", (ip,))
+        conn.execute("UPDATE white_list SET accepted = 2  WHERE src_ip = ?", (ip,))
         return True, None
     except Exception as e:
         return False, str(e)
