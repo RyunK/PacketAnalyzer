@@ -2,12 +2,29 @@ from engine import PacketData, Flow
 from datetime import datetime
 from .Flood_conditions import flood_conditions
 
-MY_IP = "192.168.11.129"  
+import socket
+
+
+def get_local_ip():
+    """실제 사용 중인 로컬 IP 확인 (외부로 나가는 라우트 기준)"""
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    try:
+        s.connect(("8.8.8.8", 80))  # 실제 전송 없음, 라우팅 조회용
+        return s.getsockname()[0]
+    except Exception:
+        return None
+    finally:
+        s.close()
 
 def detect(packet: PacketData, flow: Flow):
     """
     SYN Flood 공격을 받을 때 탐지
     """
+
+    if not hasattr(detect, "_my_ip"):
+        detect._my_ip = get_local_ip()
+
+    MY_IP = detect._my_ip
 
     condition = flood_conditions(flow)
     if condition is None:
