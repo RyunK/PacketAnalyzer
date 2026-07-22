@@ -25,7 +25,7 @@ else:
         col1, col2 = st.columns([5, 1])
         col1.warning(a["message"])
         col1.caption(f"발생일시: {a['created_at']}")
-        if col2.button("확인", key=f"ack_{a['id']}", use_container_width=True):
+        if col2.button("확인", key=f"ack_{a['id']}", width="stretch"):
             conn = get_db()
             conn.execute("UPDATE notifications SET is_read = 1 WHERE id = ?", (a["id"],))
             conn.commit()
