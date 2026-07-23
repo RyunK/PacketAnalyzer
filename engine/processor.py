@@ -1,14 +1,17 @@
 from queue import Queue
 from scapy.layers.inet import IP, TCP, UDP
-from .packet_data import PacketData
+import time
+import traceback
 
+from .packet_data import PacketData
 from .flow_manager import FlowManager
+from .score_calculator import ScoreCalculator
+from .auto_block import AutoBlock
 
 from .detector_loader import load_detectors
 from .warning_manager import WarningManager
 from .db.dbmodule import DBModule
-
-import time
+from engine.iptables import _rule_exists, is_blocked
 
 
 
@@ -76,34 +79,71 @@ class PacketProcessor:
         last_flush = time.time()
         while True:
             raw_packet = self.packet_queue.get()
+
             packet = self.process_packet(raw_packet)
             
             if packet is None:
                 continue
 
+            if packet.dst_port == 22 or packet.src_port == 22:
+                continue
+
+            # 패킷 src ip가 차단이 되어있으면 blocked_packet에다 넣고 컨티뉴한다.
+            if self.db_module.isit_blocked_fromdb(packet.src_ip):
+                self.db_module.insert_blocked_table(
+                    packet.timestamp, packet.src_ip, packet.dst_ip, 
+                    packet.src_port, packet.dst_port, packet.protocol, 
+                    packet.packet_size, packet.payload_size, packet.tcp_flags)
+                continue
+
             context = self.flow_manager.update(packet)
 
             if time.time() - self.last_flow_cleanup >= 5:
-                self.flow_manager.remove_inactive_flows(current_time=packet.timestamp, timeout=30)
+                self.flow_manager.remove_inactive_flows(current_time=packet.timestamp, db=self.db_module)
                 self.last_flow_cleanup = time.time()
-
-            self.db_module.insert_packet_table(
-                packet.timestamp, packet.src_ip, packet.dst_ip, 
-                packet.src_port, packet.dst_port, packet.protocol, 
-                packet.packet_size, packet.payload_size, packet.tcp_flags)
             
+            try: 
+                self.db_module.insert_packet_table(
+                    packet.timestamp, packet.src_ip, packet.dst_ip, 
+                    packet.src_port, packet.dst_port, packet.protocol, 
+                    packet.packet_size, packet.payload_size, packet.tcp_flags)
+            except Exception as e :
+                traceback.print_exc()
 
             for detect in self.detectors:
-                result, name = detect(context.packet, context.flow)
+                raw_result = detect(context.packet, context.flow)
+
+                if raw_result is None:
+                    result, name = False, "Unknown"
+                else:
+                    result, name = raw_result
 
                 if result:
-                    warning_manager.add_warning(
-                        packet.timestamp,
-                        packet.src_ip,
-                        name
-                    )
+                    try: 
+                        # === 점수 계산하는 부분 ===
+                        calulator = ScoreCalculator(self.db_module)
+                        score = calulator.calc_score(name, packet)
+                        # === 점수 계산하는 부분 끝 ===
 
-                if time.time() - last_flush >= 5:
+                        warning_manager.add_warning(
+                            packet.timestamp,
+                            packet.src_ip,
+                            name,
+                            score
+                        )
+                        
+                        # if _rule_exists(packet.src_ip, "ACCEPT"):
+                        if self.db_module.isit_white_fromdb(packet.src_ip):
+                            continue
+
+
+                        # score대로 차단하는 코드
+                        auto_blocker = AutoBlock(self.db_module)
+                        auto_blocker.auto_block(score, packet.src_ip)
+                    except Exception as e :
+                        traceback.print_exc()
+
+                if time.time() - last_flush >= 1:
                     warning_manager.flush(self.db_module)
                     last_flush = time.time()
 
