@@ -30,7 +30,7 @@ pages = [
     st.Page('webpages/pages/home.py', title='🏠 Home'),
     st.Page('webpages/pages/warning_list.py', title='⚠️ warnings'),
     st.Page('webpages/pages/details.py', title='📋 Details'),
-    st.Page('webpages/pages/Messenger.py', title='💬 Messenger'),
+    st.Page('webpages/pages/messenger.py', title='💬 Messenger'),
 ]
 
 # 일반 유저에게는 권한 요청 페이지 노출
@@ -56,9 +56,9 @@ if me["role"] == "admin":
     
     security_pending = get_unread_notification_count(["security_alert", "concurrent_login_attempt"])
     security_label = f"🚨 Security Alerts ({security_pending})" if security_pending else "🚨 Security Alerts"
-    pages.append(st.Page('webpages/pages/security_alerts.py', title=security_label))
+    pages.append(st.Page('webpages/pages/security_alert.py', title=security_label))
     
-    pages.append(st.Page('webpages/pages/Block_Management.py', title='🚫 Block Management'))
+    pages.append(st.Page('webpages/pages/blockmanagement.py', title='🚫 Block Management'))
     pages.append(st.Page('webpages/pages/audit_logs.py', title='📜 Audit Logs'))
 
 pg = st.navigation(pages)
