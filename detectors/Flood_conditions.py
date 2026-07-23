@@ -16,7 +16,7 @@ def flood_conditions(flow: Flow):
     
     recent_duration = (recent_packets[-1].timestamp - recent_packets[0].timestamp)
 
-    if recent_duration < 2:
+    if recent_duration <= 0:
         return None
 
     pps = packet_count / recent_duration
