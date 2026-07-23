@@ -418,7 +418,9 @@ def _load_table_from_db(table_name: str) -> pd.DataFrame:
     db = dbsource()
     rows = db.fetch(table_name)
     if not rows:
-        raise ValueError(f"{table_name} 테이블에 데이터가 없습니다.")
+        # 데이터가 0건인 것은 에러가 아니라 정상 상태이므로 빈 DataFrame으로 반환
+        return pd.DataFrame()
+
 
     df = pd.DataFrame(rows)
     if "timestamp" in df.columns:
@@ -603,10 +605,10 @@ def build_geo_figures(ok_df: pd.DataFrame):
         showcoastlines=True,
         coastlinecolor="rgba(148,163,184,0.35)",
         coastlinewidth=0.6,
-        fitbounds="locations",
+        
         domain=dict(x=[0, 1], y=[0, 1]),
         projection_type="equirectangular",
-        projection_scale=3.25,
+        
         lonaxis=dict(range=[-180, 180]),
         lataxis=dict(range=[-60, 85]),
         showland=True,
@@ -734,6 +736,8 @@ except Exception as e:
         f"_dbsource.py 위치와 packets.db의 {table_name} 테이블을 확인해주세요."
     )
     st.stop()
+
+
 
 flows_df = build_flows(packets_df)
 
