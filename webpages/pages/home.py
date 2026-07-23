@@ -253,10 +253,11 @@ bps = (total_bytes * 8) / 60
 
 
 last_packet = last_packet_data["last_packet"].iloc[0]
-last_blocked = blocked_packets["last_blocked"].iloc[0]
+last_blocked = blocked_packets["last_blocked"].iloc[0] if blocked_packets["last_blocked"].iloc[0] else 0
 
 # 엔진 상태
-engine_status = "Running" if packets["timestamp"].max() + 5 > now or blocked_packets["last_blocked"].iloc[0] + 5 > now else "Stopped"
+
+engine_status = "Running" if packets["timestamp"].max() + 5 > now or last_blocked + 5 > now else "Stopped"
 
 col, col1, col2, col3 = st.columns(4)
 
