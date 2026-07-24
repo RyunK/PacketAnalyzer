@@ -219,7 +219,7 @@ def check_new_warning():
     if current_warnings is None or current_warnings.empty:
         return
 
-    latest_ts = current_warnings["last_timestamp"].iloc[0]
+    latest_ts = current_warnings["last_timestamp"].iloc[-1]
     now_ts = time.time()
 
     if "last_flashed_ts" not in st.session_state:
@@ -253,7 +253,7 @@ def check_new_warning():
         """, unsafe_allow_html=True)
 
         # attack_type = warnings["attack_type"].iloc[0]
-        attack_type = current_warnings["attack_type"].iloc[0]
+        attack_type = current_warnings["attack_type"].iloc[-1]
         alert_text = f"긴급 경고. {attack_type} 공격 발생. 긴급 경고. {attack_type} 공격 발생."
 
         # 2. 구글 TTS 기본 오디오 바이너리 생성
