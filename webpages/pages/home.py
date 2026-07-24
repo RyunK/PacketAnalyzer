@@ -83,10 +83,10 @@ warnings = pd.read_sql_query(
     """
 SELECT *
 FROM warnings
-ORDER BY last_timestamp DESC
-LIMIT 5
+WHERE last_timestamp >= ?
 """,
     conn,
+    params=(one_day_ago,),
 )
 
 warnings_cnt = pd.read_sql_query(
@@ -468,7 +468,7 @@ with right:
     if warnings.empty:
         st.success("No Warning")
     else:
-        for _, row in warnings.iterrows():
+        for _, row in warnings.sort_values("last_timestamp", ascending=False).head(5).iterrows():
             last_time = datetime.fromtimestamp(
                 row.last_timestamp, tz=kst
             ).strftime("%Y-%m-%d %H:%M:%S")
