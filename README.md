@@ -23,10 +23,11 @@ pip install -r requirements.txt
 
 ### 2. Discord 봇 및 .env 설정
 
-`.env` 파일 설정이 필요합니다.
+
 
 [디스코드 개발자 포탈](https://discord.com/developers/)에 접속하여 디스코드 봇을 생성합니다. 
 
+`.env` 파일을 아래와 같이 생성합니다.
 
 ```
 DISCORD_TOKEN = YOUR_BOT_INSTALL_LINK
@@ -51,28 +52,17 @@ python main.py
 streamlit run index.py
 ```
 
-
-### 5. 전체 실행
-
-```bash
-start_all.bat
-```
-
 ---
 
 ## 주요 기능
 
 * 실시간 TCP/UDP 패킷 수집
-* Flow 기반 패킷 관리
 * 다양한 네트워크 공격 탐지
-* 공격 위험도(CVSS 기반) 점수 계산
 * 공격 이력 관리
-* 공격 자동 차단(iptables)
-* 직접 ip 차단(iptables)
+* 공격 로그 조회 및 통계 제공
+* 공격 자동 및 수동 차단(iptables)
 * Discord 알림 전송
 * Streamlit 기반 모니터링 대시보드
-* 승인 기반 IP 화이트리스트 관리
-* 공격 로그 조회 및 통계 제공
 
 ---
 ## Dependency
